@@ -15,14 +15,13 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.Enumeration;
 import java.util.Vector;
-
 import javax.swing.JRadioButton;
 import javax.swing.SwingConstants;
 import javax.swing.JScrollBar;
 import javax.swing.JSpinner;
 import javax.swing.JComboBox;
-
-
+import javax.swing.JTextArea;
+//Begin the GUI
 public class Main {
 
 	private JFrame frame;
@@ -37,16 +36,20 @@ public class Main {
     private JPanel Candidate;   
     private JPanel Election;    
     private JPanel ElectionResults;
+    private JPanel GamesDisplay;
+  	private JPanel JoinGame;
+  	private JPanel StartGame;
     private JButton btnSignIn;
     //hold candidate information   
   	private	String candidate = null;
   	private String vote = null;
   	private String ans = null;
   	private String electionResult = null;
-  	private int primarykey = 0;
+  	private int primarykey;//Stores this player primary key
   	private boolean loggedIn;
   	private boolean gameContinued;
-  	private JPanel GamesDisplay;
+  	private long playerGame;//stores the game number player has continued/ joined
+  	
 	/**
 	 * Launch the application.
 	 */
@@ -70,7 +73,9 @@ public class Main {
 		//Initialize local variables
 		loggedIn = false;
 		gameContinued = false;
-	
+		primarykey = 0;
+		playerGame = 0;
+		
 		initialize();
 	}
 
@@ -127,53 +132,11 @@ public class Main {
 	    
 	    btnJoinGame.addActionListener(new ActionListener() {
 	    	public void actionPerformed(ActionEvent arg0) {
-	    		boolean candidateCheck = false;
 	    		boolean gameCheck = false;
 	    		//System.out.println("entering 128\n");
 	    		//Add user to game
-	    		Game.addToGame(getPrimaryKey(), 1);
-	    		//Check if the user has been successfully assigned a game 
-				gameCheck = Game.inGameCheck(getPrimaryKey());
-	    		//Open next panels to interact with				
-				//This user is in a game and needs to be candidateChecked
-				if (gameCheck == true)
-				{
-					System.out.println("141\n");
-					StartMenu.setVisible(false);
-					//Redraw the GamesDisplay panel 
-					GamesDisplay.removeAll();								
-					GamesDisplay.validate();
-					retrieveGames();//Retrieve this users game list
-					GamesDisplay.repaint();
-					//Display GamesDisplay panel
-					GamesDisplay.setVisible(true);//For now, just have them select the game to continue
-					/*
-					//Check if this user is a valid candidate right off the bat, This may change later
-					candidateCheck = Game.candidateCheck(getPrimaryKey());
-					
-					if (candidateCheck == true)
-					{
-						//Make a jpanel visible for answering candidacy
-						StartMenu.setVisible(false);
-						Candidate.setVisible(true);
-					}
-					//For now return to main menu
-					else if (candidateCheck == false)
-					{
-						//Close the window and return to main menu
-						//hide this candidate panel, for now return to title screen or if election is ready go to election
-						if ((Game.electionSetup()==true))
-						{
-							Election.setVisible(true);	
-							StartMenu.setVisible(false);
-						}
-						//This next call may be superfluous, but keep as paranoia check
-						if((Game.electionSetup()==false))
-						{
-							StartMenu.setVisible(true);	
-						}		  
-					}*/
-				}
+	    		StartMenu.setVisible(false);
+	    		JoinGame.setVisible(true);
 	    	}
 	    });
 	   
@@ -188,7 +151,7 @@ public class Main {
 	    	 btnStartGame.setEnabled(false);
 	    }
 	    //*****Eventually this will have to check that the specific game they're in evals to true, not that they're just in any game
-	    if ((getPrimaryKey() != 0) && (Game.inGameCheck(getPrimaryKey()) == false) && (Game.inGameCount() >= 10))
+	    if ((getPrimaryKey() != 0) && (Game.inGameCheck(getPrimaryKey()) == false) && (Game.inGameCount(getPlayerGame()) >= 10))
 	    {	    	
 	    	 btnStartGame.setEnabled(true);
 	    }
@@ -298,7 +261,7 @@ public class Main {
 												
 						setPrimaryKey(pk);
 						loggedIn = true;//Set the local boolean loggedIn check to true
-						
+
 						System.out.println("Congratulations Senator, you have been awarded 50 reputation points for joining the game!");											
 						//Set the value of primary key 					
 						System.out.println("Your Primary Key is: " + getPrimaryKey());									
@@ -324,7 +287,7 @@ public class Main {
 							if (gameCheck == true)
 							{
 								//Check if this user is a valid candidate right off the bat, This may change later
-								candidateCheck = Game.candidateCheck(getPrimaryKey());
+								candidateCheck = Game.candidateCheck(getPrimaryKey(), getPlayerGame());
 								
 								if (candidateCheck == true)
 								{
@@ -337,12 +300,12 @@ public class Main {
 								{
 									//Close the window and return to main menu
 									//hide this candidate panel, for now return to title screen or if election is ready go to election
-									if ((Game.electionSetup()==true))
+									if ((Game.electionSetup(getPlayerGame())==true))
 									{
 										Election.setVisible(true);	
 							    		NewUser.setVisible(false);
 									}
-									if((Game.electionSetup()==false))
+									if((Game.electionSetup(getPlayerGame())==false))
 									{
 										StartMenu.setVisible(true);	
 							    		NewUser.setVisible(false);
@@ -369,7 +332,6 @@ public class Main {
 				String user = Username_1.getText();
 				String password = Password.getText();				
 				int pk = Game.login(user, password);
-                boolean candidateCheck = false;
 				boolean gameCheck = false;
                 
 				JLabel lblInvalidUsernameOr = DefaultComponentFactory.getInstance().createLabel("");
@@ -387,8 +349,8 @@ public class Main {
 					//Set the logged in user's pk
 					setPrimaryKey(pk);
 					loggedIn = true;//Set local loggedIn check to true
-										
-					Game.inGameCount();
+		
+					Game.inGameCount(getPlayerGame());
 					//Check if the user has been assigned a game 
 					gameCheck = Game.inGameCheck(pk);
 					if (gameCheck == false)
@@ -416,35 +378,7 @@ public class Main {
 						//Run the candidate check
 						retrieveGames();
 						Login.setVisible(false);
-						GamesDisplay.setVisible(true);
-						/*
-						//Check if this user is a valid candidate right off the bat, This may change later
-						candidateCheck = Game.candidateCheck(getPrimaryKey());
-						
-						if(candidateCheck == true)
-						{
-							//Make a jpanel visible for answering candidacy
-							Login.setVisible(false);
-							Candidate.setVisible(true);
-						}
-						
-							else if (candidateCheck == false)
-							{
-								//Close the window, should be logged in now without answering candidacy
-								System.out.println("Your Primary Key is: " + getPrimaryKey());
-								//hide this candidate panel, for now return to title screen or if election is ready go to election
-								if ((Game.electionSetup()==true))
-								{
-									Election.setVisible(true);	
-						    		Login.setVisible(false);
-								}
-								if((Game.electionSetup()==false))
-								{
-									StartMenu.setVisible(true);	
-						    		Login.setVisible(false);
-								}							
-							}
-					*/
+						GamesDisplay.setVisible(true);						
 					}
 				}
 			}
@@ -479,9 +413,95 @@ public class Main {
 		Candidate = new JPanel();
 		frame.getContentPane().add(Candidate, "name_156688107903713");
 		Candidate.setLayout(null);
+        //Update candidates panel
+		candidatesUpdate();		
+		
+		//********************************************************End of Candidate Methods*******************************************************************
+		
+		//********************************************************Begin Election Methods******************************************************************		
+		//Create Frame
+		Election = new JPanel();
+		frame.getContentPane().add(Election, "name_234158849574427");
+		Election.setLayout(null);
 		
 		//Ensure this player has logged in and set the game they are in before creating values
 		if((loggedIn == true) && (gameContinued == true))
+		{	
+			//if the election has been set up, go ahead and populate the candidates
+			if (Game.electionSetup(getPlayerGame())==true)
+			{									     
+			     electionUpdate();
+			}			
+		}
+		//********************************************************End of Election Methods********************************************************************
+		
+		//********************************************************Begin Election Results Methods*********************************************************
+		ElectionResults = new JPanel();
+		frame.getContentPane().add(ElectionResults, "name_217610321728531");
+		ElectionResults.setLayout(null);
+		
+		//Ensure this player has logged in and set the game they are in before creating values
+		if((loggedIn == true) && (gameContinued == true))
+		{
+			if (Game.electionSetup(getPlayerGame())==true)
+			{
+			     resultsUpdate();
+			}
+		}
+		//********************************************************End of Election Results Methods*********************************************************
+
+		//********************************************************Begin GamesDisplay Methods*********************************************************		
+		GamesDisplay = new JPanel();
+		frame.getContentPane().add(GamesDisplay, "name_427025453661026");
+		GamesDisplay.setLayout(null);
+							
+		//If this user is in a game, retrieve all games and let them continue
+		System.out.print("Entering 582 GUI\n");
+		
+		//Ensure this player has logged in 
+		if((loggedIn == true))
+		{					    
+			if (Game.inGameCheck(getPrimaryKey()) == true)
+			{
+				System.out.print("Entering 567 GUI\n");  
+				//Function to retrieve games player is in, displays in a dropdown menu
+				retrieveGames();
+				//Probably need to call all possible panel combinations here to redraw
+			}										
+		}				
+		//********************************************************End of GamesDisplay Methods*********************************************************
+		
+		//********************************************************Begin Join Games Panel*********************************************************
+		JoinGame = new JPanel();
+		frame.getContentPane().add(JoinGame, "name_229670089069189");
+		JoinGame.setLayout(null);
+		
+		JLabel lblAvailableGames = DefaultComponentFactory.getInstance().createTitle("Available Games");
+		lblAvailableGames.setFont(new Font("Comic Sans MS", Font.BOLD, 17));
+		lblAvailableGames.setBounds(165, 11, 157, 47);
+		JoinGame.add(lblAvailableGames);
+		
+		//Function to retrieve games player can join, displays in a dropdown menu
+		joinGame();		
+		//********************************************************End of Join Games Panel*********************************************************
+	    
+		//********************************************************Begin Start Game panel********************************************************
+		StartGame = new JPanel();
+		frame.getContentPane().add(StartGame, "name_233910827980441");
+		StartGame.setLayout(null);
+		
+		//Function to show start game button and number of players in game
+		startGame();										
+		//********************************************************End of Start Game Panel********************************************************
+	}	
+	
+	//Begin Function Methods:
+	
+	//This function updates the candidates panelfor a player
+	public void candidatesUpdate()
+	{
+		//Ensure this player has logged in and set the game they are in before creating values
+		if((loggedIn == true) || (gameContinued == true))
 		{	
 			//Yea button actions:
 			JButton Yea = new JButton("Yea");
@@ -496,7 +516,7 @@ public class Main {
 					//reset ans class variable to null
 					ans = null;
 					//hide this candidate panel, for now return to title screen or if election is ready go to election
-					if ((Game.electionSetup()==true))
+					if ((Game.electionSetup(getPlayerGame())==true))
 					{
 						//Update the election board
 						Election.removeAll();						
@@ -507,7 +527,7 @@ public class Main {
 						Election.setVisible(true);	
 			    		Candidate.setVisible(false);
 					}
-					if((Game.electionSetup()==false))
+					if((Game.electionSetup(getPlayerGame())==false))
 					{
 						StartMenu.setVisible(true);	
 			    		Candidate.setVisible(false);
@@ -527,7 +547,7 @@ public class Main {
 					//reset ans class variable to null
 					ans = null;
 					//hide this candidate panel, for now return to title screen or if election is ready go to election
-					if ((Game.electionSetup()==true))
+					if ((Game.electionSetup(getPlayerGame())==true))
 					{
 						//Update the election board
 						Election.removeAll();						
@@ -538,14 +558,14 @@ public class Main {
 						Election.setVisible(true);	
 			    		Candidate.setVisible(false);
 					}
-					if((Game.electionSetup()==false))
+					if((Game.electionSetup(getPlayerGame())==false))
 					{
 						StartMenu.setVisible(true);	
 			    		Candidate.setVisible(false);
 					}
 				}
 			});
-					
+				
 			JLabel lblNewJgoodiesLabel = DefaultComponentFactory.getInstance().createLabel("You have enough reputation to compete for the office of the President!");
 			lblNewJgoodiesLabel.setBounds(33, 103, 424, 14);
 			Candidate.add(lblNewJgoodiesLabel);
@@ -557,123 +577,60 @@ public class Main {
 			JLabel lblWaysAndMeans_1 = DefaultComponentFactory.getInstance().createTitle("Ways And Means");
 			lblWaysAndMeans_1.setFont(new Font("Wide Latin", Font.PLAIN, 25));
 			lblWaysAndMeans_1.setBounds(37, 38, 409, 43);
-			Candidate.add(lblWaysAndMeans_1);		
+			Candidate.add(lblWaysAndMeans_1);
 		}
-		//********************************************************End of Candidate Methods*******************************************************************
-		
-		//********************************************************Begin Election Methods******************************************************************		
-		//Create Frame
-		Election = new JPanel();
-		frame.getContentPane().add(Election, "name_234158849574427");
-		Election.setLayout(null);
-		
-		//Ensure this player has logged in and set the game they are in before creating values
-		if((loggedIn == true) && (gameContinued == true))
-		{	
-			//if the election has been set up, go ahead and populate the candidates
-			if (Game.electionSetup()==true)
-			{									     
-			     electionUpdate();
-			}			
-		}
-		//********************************************************End of Election Methods********************************************************************
-		
-		//********************************************************Begin Election Results Methods*********************************************************
-		ElectionResults = new JPanel();
-		frame.getContentPane().add(ElectionResults, "name_217610321728531");
-		ElectionResults.setLayout(null);
-		
-		//Ensure this player has logged in and set the game they are in before creating values
-		if((loggedIn == true) && (gameContinued == true))
-		{
-			if (Game.electionSetup()==true)
-			{
-			     resultsUpdate();
-			}
-		}
-		//********************************************************End of Election Results Methods*********************************************************
-
-		//********************************************************Begin GamesDisplay Methods*********************************************************		
-		GamesDisplay = new JPanel();
-		frame.getContentPane().add(GamesDisplay, "name_427025453661026");
-		GamesDisplay.setLayout(null);
-		
-		//If this user is in a game, retrieve all games and let them continue
-		System.out.print("Entering 582 GUI\n");
-		
-		//Ensure this player has logged in 
-		if((loggedIn == true))
-		{					    
-			if (Game.inGameCheck(getPrimaryKey()) == true)
-			{
-				System.out.print("Entering 567 GUI\n");  
-				retrieveGames();
-				//Probably need to call all possible panel combinations here to redraw
-			}										
-		}				
-		//********************************************************End of GamesDisplay Methods*********************************************************
-	}	
-	
-	//Begin Function Methods:
-	
-	//return the primary key for the class
-	public int getPrimaryKey() {
-		return primarykey;
 	}
-	//Set the primary key value for the class
-	public void setPrimaryKey(int primarykey) {
-		this.primarykey = primarykey;
-	}
+	
 	//This function updates the election results
 	public void electionUpdate()
 	{
-		candidate = Game.getCandidates(0) + " RP: ";
-		final JRadioButton candidate0 = new JRadioButton(candidate + Game.getCandidatesRP(0));
+		candidate = Game.getCandidates(0, getPlayerGame()) + " RP: ";
+		final JRadioButton candidate0 = new JRadioButton(candidate + Game.getCandidatesRP(0, getPlayerGame()));
 		candidate0.setBounds(26, 82, 124, 23);
 		Election.add(candidate0);								
 		
-		candidate = Game.getCandidates(1) + " RP: ";
-		final JRadioButton candidate1 = new JRadioButton(candidate + Game.getCandidatesRP(1));
+		candidate = Game.getCandidates(1, getPlayerGame()) + " RP: ";
+		final JRadioButton candidate1 = new JRadioButton(candidate + Game.getCandidatesRP(1, getPlayerGame()));
 		candidate1.setBounds(26, 108, 124, 23);
 		Election.add(candidate1);				
 		
-		candidate = Game.getCandidates(2) + " RP: ";
-		final JRadioButton candidate2 = new JRadioButton(candidate + Game.getCandidatesRP(2));
+		candidate = Game.getCandidates(2, getPlayerGame()) + " RP: ";
+		final JRadioButton candidate2 = new JRadioButton(candidate + Game.getCandidatesRP(2, getPlayerGame()));
 		candidate2.setBounds(26, 134, 124, 23);
 		Election.add(candidate2);
 		
-		candidate = Game.getCandidates(3) + " RP: ";
-		final JRadioButton candidate3 = new JRadioButton(candidate + Game.getCandidatesRP(3));
+		candidate = Game.getCandidates(3, getPlayerGame()) + " RP: ";
+		final JRadioButton candidate3 = new JRadioButton(candidate + Game.getCandidatesRP(3, getPlayerGame()));
 		candidate3.setBounds(26, 160, 124, 23);
 		Election.add(candidate3);					
 		
-		candidate = Game.getCandidates(4) + " RP: ";
-		final JRadioButton candidate4 = new JRadioButton(candidate + Game.getCandidatesRP(4));
+		candidate = Game.getCandidates(4, getPlayerGame()) + " RP: ";
+		final JRadioButton candidate4 = new JRadioButton(candidate + Game.getCandidatesRP(4, getPlayerGame()));
 		candidate4.setBounds(152, 82, 130, 23);
 		Election.add(candidate4);
 		
-		candidate = Game.getCandidates(5) + " RP: ";
-		final JRadioButton candidate5 = new JRadioButton(candidate + Game.getCandidatesRP(5));
+		candidate = Game.getCandidates(5, getPlayerGame()) + " RP: ";
+		final JRadioButton candidate5 = new JRadioButton(candidate + Game.getCandidatesRP(5, getPlayerGame()));
 		candidate5.setBounds(152, 108, 130, 23);
 		Election.add(candidate5);					
 			
-		candidate = Game.getCandidates(6) + " RP: ";
-		final JRadioButton candidate6 = new JRadioButton(candidate + Game.getCandidatesRP(6));
+		candidate = Game.getCandidates(6, getPlayerGame()) + " RP: ";
+		final JRadioButton candidate6 = new JRadioButton(candidate + Game.getCandidatesRP(6, getPlayerGame()));
 		candidate6.setBounds(152, 134, 130, 23);
 		Election.add(candidate6);					
 		
-		candidate = Game.getCandidates(7) + " RP: ";
-		final JRadioButton candidate7 = new JRadioButton(candidate + Game.getCandidatesRP(7));
+		candidate = Game.getCandidates(7, getPlayerGame()) + " RP: ";
+		final JRadioButton candidate7 = new JRadioButton(candidate + Game.getCandidatesRP(7, getPlayerGame()));
 		candidate7.setBounds(152, 160, 130, 23);
 		Election.add(candidate7);					
 		
-		candidate = Game.getCandidates(8) + " RP: ";
-		final JRadioButton candidate8 = new JRadioButton(candidate + Game.getCandidatesRP(8));
+		candidate = Game.getCandidates(8, getPlayerGame()) + " RP: ";
+		final JRadioButton candidate8 = new JRadioButton(candidate + Game.getCandidatesRP(8, getPlayerGame()));
 		candidate8.setBounds(294, 82, 130, 23);
 		Election.add(candidate8);				
 		
-		candidate = Game.getCandidates(9) + " RP: ";
-		final JRadioButton candidate9 = new JRadioButton(candidate + Game.getCandidatesRP(9));
+		candidate = Game.getCandidates(9, getPlayerGame()) + " RP: ";
+		final JRadioButton candidate9 = new JRadioButton(candidate + Game.getCandidatesRP(9, getPlayerGame()));
 		candidate9.setBounds(294, 108, 130, 23);
 		Election.add(candidate9);	
 		
@@ -700,56 +657,56 @@ public class Main {
 				//Capture this user's vote selection and submit it to the database
 			    if (candidate0.isSelected())
 				{
-					vote = Game.getCandidates(0);	
+					vote = Game.getCandidates(0, getPlayerGame());	
 				}				    
 			    
 			    if (candidate1.isSelected())
 				{
-					vote = Game.getCandidates(1);	
+					vote = Game.getCandidates(1, getPlayerGame());	
 				}
 			    
 			    if (candidate2.isSelected())
 				{
-					vote = Game.getCandidates(2);	
+					vote = Game.getCandidates(2, getPlayerGame());	
 				}
 			    
 			    if (candidate3.isSelected())
 				{
-					vote = Game.getCandidates(3);	
+					vote = Game.getCandidates(3, getPlayerGame());	
 				}
 			    
 			    if (candidate4.isSelected())
 				{
-					vote = Game.getCandidates(4);	
+					vote = Game.getCandidates(4, getPlayerGame());	
 				}
 			    
 			    if (candidate5.isSelected())
 				{
-					vote = Game.getCandidates(5);	
+					vote = Game.getCandidates(5, getPlayerGame());	
 				}
 			    
 			    if (candidate6.isSelected())
 				{
-					vote = Game.getCandidates(6);	
+					vote = Game.getCandidates(6, getPlayerGame());	
 				}
 			    
 			    if (candidate7.isSelected())
 				{
-					vote = Game.getCandidates(7);	
+					vote = Game.getCandidates(7, getPlayerGame());	
 				}
 			    
 			    if (candidate8.isSelected())
 				{
-					vote = Game.getCandidates(8);	
+					vote = Game.getCandidates(8, getPlayerGame());	
 				}
 			    
 			    if (candidate9.isSelected())
 				{
-					vote = Game.getCandidates(9);	
+					vote = Game.getCandidates(9, getPlayerGame());	
 				}
 			    
 			    //Submit the vote to the database		
-			    Game.elect(vote);
+			    Game.elect(vote, getPlayerGame());
 			    //Update the leader board
 			    ElectionResults.removeAll();						
 				resultsUpdate();
@@ -779,52 +736,52 @@ public class Main {
 		btnQuit.setBounds(172, 228, 89, 23);
 		ElectionResults.add(btnQuit);
 		
-		electionResult = Game.getElectionResults(0);
+		electionResult = Game.getElectionResults(getPlayerGame(), 0);
 		JLabel First = DefaultComponentFactory.getInstance().createLabel(electionResult);
 		First.setBounds(172, 55, 234, 14);
 		ElectionResults.add(First);
 		
-		electionResult = Game.getElectionResults(1);
+		electionResult = Game.getElectionResults(getPlayerGame(), 1);
 		JLabel Second = DefaultComponentFactory.getInstance().createLabel(electionResult);
 		Second.setBounds(172, 72, 234, 14);
 		ElectionResults.add(Second);
 		
-		electionResult = Game.getElectionResults(2);
+		electionResult = Game.getElectionResults(getPlayerGame(), 2);
 		JLabel Third = DefaultComponentFactory.getInstance().createLabel(electionResult);
 		Third.setBounds(172, 89, 234, 14);
 		ElectionResults.add(Third);
 		
-		electionResult = Game.getElectionResults(3);
+		electionResult = Game.getElectionResults(getPlayerGame(), 3);
 		JLabel Fourth = DefaultComponentFactory.getInstance().createLabel(electionResult);
 		Fourth.setBounds(172, 104, 234, 14);
 		ElectionResults.add(Fourth);
 		
-		electionResult = Game.getElectionResults(4);
+		electionResult = Game.getElectionResults(getPlayerGame(), 4);
 		JLabel Fifth = DefaultComponentFactory.getInstance().createLabel(electionResult);
 		Fifth.setBounds(172, 119, 237, 14);
 		ElectionResults.add(Fifth);
 		
-		electionResult = Game.getElectionResults(5);
+		electionResult = Game.getElectionResults(getPlayerGame(), 5);
 		JLabel Sixth = DefaultComponentFactory.getInstance().createLabel(electionResult);
 		Sixth.setBounds(172, 134, 234, 14);
 		ElectionResults.add(Sixth);
 		
-		electionResult = Game.getElectionResults(6);
+		electionResult = Game.getElectionResults(getPlayerGame(), 6);
 		JLabel Seventh = DefaultComponentFactory.getInstance().createLabel(electionResult);
 		Seventh.setBounds(172, 152, 234, 14);
 		ElectionResults.add(Seventh);
 		
-		electionResult = Game.getElectionResults(7);
+		electionResult = Game.getElectionResults(getPlayerGame(), 7);
 		JLabel Eigth = DefaultComponentFactory.getInstance().createLabel(electionResult);
 		Eigth.setBounds(172, 170, 234, 14);
 		ElectionResults.add(Eigth);
 		
-		electionResult = Game.getElectionResults(8);
+		electionResult = Game.getElectionResults(getPlayerGame(), 8);
 		JLabel Ninth = DefaultComponentFactory.getInstance().createLabel(electionResult);
 		Ninth.setBounds(172, 188, 234, 14);
 		ElectionResults.add(Ninth);
 		
-		electionResult = Game.getElectionResults(9);
+		electionResult = Game.getElectionResults(getPlayerGame(), 9);
 		JLabel Tenth = DefaultComponentFactory.getInstance().createLabel(electionResult);
 		Tenth.setBounds(172, 203, 234, 14);
 		ElectionResults.add(Tenth);
@@ -842,12 +799,16 @@ public class Main {
 	}//End of resultsUpdate
 	
 	//This function sets the list of radio buttons to select the game player wants to play after login
-	//****************Next time Once game selected, the GUI needs to redraw all fields on tables to represent the new game
+	//****************Next time-- Once game selected, the GUI needs to redraw all fields on tables to represent the new game
 	public void retrieveGames()
 	{
 		Vector<Integer> pGames = new Vector<Integer>();//use games.size() to get final size of Vector		
 		//Get the vector of games this player is in
 		pGames = Game.getPlayerGames(getPrimaryKey());
+		
+		//Test a method
+		Game.gameStartedCheck(getPlayerGame());
+		//Game.inGameCheck(1);
 		
 		//This build uses java 1.8.2, will throw an error if using anything below Java 7
 		final JComboBox<Integer> comboBox = new JComboBox<Integer>(pGames);
@@ -870,63 +831,278 @@ public class Main {
 			public void mouseClicked(MouseEvent arg0) {
 				//Retrieve the selected game				
 				int selectedGame =  (Integer) comboBox.getSelectedItem();
-				System.out.println("game selected: "+selectedGame+"\n");
+				System.out.println("game selected: "+ selectedGame +"\n");
 				//Set the game this player is in 
-				Game.continueGame(selectedGame);
+				setPlayerGame(selectedGame);
 				//Set gameContinued to true
 				gameContinued = true;
 				
 				//Update panels for this game
 			    if ((loggedIn = true) && (gameContinued == true))
 			    {
-			    	//Update Candidate panel
-			    	Candidate.removeAll();								
-			    	Candidate.validate();
-			    	Candidate.repaint();
-
-			    	//if the election has been set up, go ahead and populate the candidates
-					if (Game.electionSetup()==true)
-					{
-						//Update Election panel
-				    	Election.removeAll();	
-				    	electionUpdate();
-				    	Election.validate();
-				    	Election.repaint();
-					}
-			    	
-					//Go to candidate methods
-					boolean candidateCheck = false;
+					//Store this player's candidate decision for this game
+			    	boolean candidateCheck = false;
 					//Check if this user is a valid candidate right off the bat, This may change later
-					candidateCheck = Game.candidateCheck(getPrimaryKey());
+					candidateCheck = Game.candidateCheck(getPrimaryKey(), getPlayerGame());
 					
-					if(candidateCheck == true)
-					{
-						//Make a jpanel visible for answering candidacy
-						GamesDisplay.setVisible(false);
-						Candidate.setVisible(true);
-					}
-					
-						else if (candidateCheck == false)
+			    	//Check to see if this game has started, if so go to candidates (eventually go to current events)
+			    	if (Game.gameStartedCheck(getPlayerGame()) == true)
+			    	{				    					    	
+				    	//if the election has been set up, go ahead and populate the candidates
+						if (Game.electionSetup(getPlayerGame())==true)
 						{
-							//Close the window, should be logged in now without answering candidacy
-							System.out.println("Your Primary Key is: " + getPrimaryKey());
-							//hide this candidate panel, for now return to title screen or if election is ready go to election
-							if ((Game.electionSetup()==true))
-							{
-								Election.setVisible(true);	
-					    		GamesDisplay.setVisible(false);
-							}
-							if((Game.electionSetup()==false))
-							{
-								StartMenu.setVisible(true);	
-					    		Login.setVisible(false);
-							}							
+							//Update Election panel
+					    	Election.removeAll();	
+					    	electionUpdate();
+					    	Election.validate();
+					    	Election.repaint();
+					    	
+					    	System.out.println("setup election 854\n");
 						}
+				    													
+						System.out.println("929\n");
+						
+						//Election not set up, and user is a candidate--go to candidate selection
+						if(candidateCheck == true)
+						{
+							//Update Candidate panel
+					    	Candidate.removeAll();
+					    	//Update the Candidate panel
+					    	candidatesUpdate();
+					    	Candidate.revalidate();
+					    	Candidate.repaint();
+					    	
+							//Make a jpanel visible for answering candidacy
+							GamesDisplay.setVisible(false);
+							Candidate.setVisible(true);
+							
+							System.out.println("937\n");
+						}
+						
+							else if (candidateCheck == false)
+							{								
+								//Election set up, go to election page
+								if ((Game.electionSetup(getPlayerGame())==true))
+								{
+									Election.setVisible(true);	
+						    		GamesDisplay.setVisible(false);
+						    		
+						    		System.out.println("repainted 950\n");
+								}
+								//Election not set up, return to start menu
+								if((Game.electionSetup(getPlayerGame())==false))
+								{
+									StartMenu.setVisible(true);	
+									GamesDisplay.setVisible(false);
+						    		
+						    		System.out.println("repainted 957\n");
+								}							
+							}
+				    }
+			    	
+			    	//This game has not started, go to StartGame panel
+			    	else if (Game.gameStartedCheck(getPlayerGame()) == false)
+			    	{
+			    		//Update StartGame panel
+						StartGame.removeAll();
+						startGame();
+				    	StartGame.validate();		    	
+				    	StartGame.repaint();
+			    		
+			    		GamesDisplay.setVisible(false);
+			    		StartGame.setVisible(true);
+			    	}
 			    }
 			}
 		});
 		btnContinue.setBounds(186, 208, 101, 23);
-		GamesDisplay.add(btnContinue);
+		GamesDisplay.add(btnContinue);		
+	}
+	
+	//This function displays a list of games that are available to a player to joing i.e. games that have not started
+	public void joinGame()
+	{
+		Vector<Integer> pGames = new Vector<Integer>();//use games.size() to get final size of Vector		
+		//Get the vector of games this player is in
+		pGames = Game.getAvailableGames();//Call function that returns games that are available to join
 		
+		//This build uses java 1.8.2, will throw an error if using anything below Java 7
+		final JComboBox<Integer> comboBox = new JComboBox<Integer>(pGames);
+		comboBox.setBounds(174, 48, 121, 20);
+		JoinGame.add(comboBox);
+		
+		JLabel lblContinueGame = DefaultComponentFactory.getInstance().createLabel("Join Game:");
+		lblContinueGame.setFont(new Font("Tahoma", Font.BOLD, 11));
+		lblContinueGame.setBounds(52, 51, 107, 14);
+		JoinGame.add(lblContinueGame);
+				
+		JButton btnContinue = new JButton("Join Game");
+		btnContinue.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent arg0) {
+				//Retrieve the selected game				
+				long selectedGame =  (Long) comboBox.getSelectedItem();
+				
+				//Add this player to this game
+				Game.addToGame(getPrimaryKey(), selectedGame);
+				
+				//Have them continue in this new game and go to new panel to see this game's status
+				setPlayerGame(selectedGame);//Store the selected game in GUI
+				//Set gameContinued to true
+				gameContinued = true;
+				//Redraw start game panel (to reflect players in game, start etc.
+				
+				//Update StartGame panel
+				StartGame.removeAll();
+				startGame();
+		    	StartGame.validate();		    	
+		    	StartGame.repaint();
+		    	System.out.println("repainted start\n");
+		    	
+		    	//Open the startGame page IF the game has not started, otherwise go to candidate stuff
+		    	if(Game.gameStartedCheck(getPlayerGame()) == false)
+		    	{
+		    		JoinGame.setVisible(false);	
+		    		StartGame.setVisible(true);
+		    	}		    	
+			    	//Open the startGame page IF the game has not started, otherwise go to candidate stuff
+			    	else if(Game.gameStartedCheck(getPlayerGame()) == true)
+			    	{			    		
+			    		//Update Candidate panel
+				    	Candidate.removeAll();								
+				    	Candidate.validate();
+				    	Candidate.repaint();
+
+				    	//if the election has been set up, go ahead and populate the candidates
+						if (Game.electionSetup(getPlayerGame())==true)
+						{
+							//Update Election panel
+					    	Election.removeAll();	
+					    	electionUpdate();
+					    	Election.validate();
+					    	Election.repaint();
+						}
+				    	
+						//Go to candidate methods
+						boolean candidateCheck = false;
+						//Check if this user is a valid candidate right off the bat, This may change later
+						candidateCheck = Game.candidateCheck(getPrimaryKey(), getPlayerGame());
+						
+						if(candidateCheck == true)
+						{
+							//Make a jpanel visible for answering candidacy
+							JoinGame.setVisible(false);
+							Candidate.setVisible(true);
+						}
+						
+							else if (candidateCheck == false)
+							{
+								//Close the window, should be logged in now without answering candidacy
+								System.out.println("Your Primary Key is: " + getPrimaryKey());
+								//hide this candidate panel, for now return to title screen or if election is ready go to election
+								if ((Game.electionSetup(getPlayerGame())==true))
+								{
+									Election.setVisible(true);	
+						    		JoinGame.setVisible(false);
+								}
+									else if((Game.electionSetup(getPlayerGame())==false))
+									{
+										StartMenu.setVisible(true);	
+							    		JoinGame.setVisible(false);
+									}							
+							}
+			    	}			
+			}
+		});
+		btnContinue.setBounds(183, 180, 101, 23);
+		JoinGame.add(btnContinue);		
+	}
+	
+	//This function allows a user to start a game if  game has > 9 players, and see how many players are in this game
+	//This function also redraws the entire StartGame panel
+	public void startGame()
+	{		
+		JLabel lblGameNumber = DefaultComponentFactory.getInstance().createTitle("Game Number:");
+		lblGameNumber.setFont(new Font("Tahoma", Font.BOLD, 18));
+		lblGameNumber.setBounds(64, 11, 162, 14);
+		StartGame.add(lblGameNumber);
+		
+		JButton btnMainMenu = new JButton("Main Menu");
+		btnMainMenu.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent arg0) {
+				StartGame.setVisible(false);
+				StartMenu.setVisible(true);
+			}
+		});
+		btnMainMenu.setBounds(78, 215, 111, 23);
+		StartGame.add(btnMainMenu);
+		
+		JButton btnQuit_1 = new JButton("Quit");
+		btnQuit_1.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent arg0) {
+				//Quit out of program
+				System.exit(0);
+			}
+		});
+		btnQuit_1.setBounds(220, 215, 102, 23);
+		StartGame.add(btnQuit_1);				
+		
+		JLabel lblNumberOfPlayers = DefaultComponentFactory.getInstance().createLabel("Number of players in game: ");
+		lblNumberOfPlayers.setBounds(16, 135, 173, 14);
+		StartGame.add(lblNumberOfPlayers);
+		
+		//Check to see if at least 10 players are in this game, if so allow a player to start the game
+				//******Current game of user held in Game.java, consider moving all that to the GUI, and having the func's that use
+				//         that data to accept arg's instead of referring in the source
+		if (Game.inGameCount(getPlayerGame()) >= 10)
+		{
+			JButton btnStartGame_1 = new JButton("Start Game!");
+			btnStartGame_1.addMouseListener(new MouseAdapter() {
+				@Override
+				public void mouseClicked(MouseEvent arg0) {
+					Game.startGame(playerGame);
+					
+					//Go to candidate panel					
+					Candidate.removeAll();	
+					candidatesUpdate();	
+			    	Candidate.validate();
+			    	Candidate.repaint();
+				    
+			    	StartGame.setVisible(false);
+			    	Candidate.setVisible(true);			    	
+				}
+			});
+			btnStartGame_1.setBounds(139, 163, 108, 23);
+			StartGame.add(btnStartGame_1);
+		}
+		
+		JTextArea noPlayers = new JTextArea();
+		noPlayers.setBounds(182, 130, 44, 22);
+		StartGame.add(noPlayers);
+		noPlayers.setText("" + Game.inGameCount(getPlayerGame()));
+		
+		JTextArea gameNo = new JTextArea();
+		gameNo.setBounds(214, 9, 51, 22);
+		StartGame.add(gameNo);
+		gameNo.setText("" + getPlayerGame());
+	}
+	
+	//Set the primary key value for the class
+	public void setPrimaryKey(int primarykey) {
+		this.primarykey = primarykey;
+	}
+	//return the primary key for the class
+	public int getPrimaryKey() {
+		return primarykey;
+	}
+	//Set the primary key value for the class
+	public void setPlayerGame(long gameID) {
+		this.playerGame = gameID;
+	}
+	//return the primary key for the class
+	public long getPlayerGame() {
+		return playerGame;
 	}
 }//End of program
