@@ -48,7 +48,7 @@ public class Main {
   	private int primarykey;//Stores this player primary key
   	private boolean loggedIn;
   	private boolean gameContinued;
-  	private long playerGame;//stores the game number player has continued/ joined
+  	private int playerGame;//stores the game number player has continued/ joined
   	
 	/**
 	 * Launch the application.
@@ -427,8 +427,8 @@ public class Main {
 		//Ensure this player has logged in and set the game they are in before creating values
 		if((loggedIn == true) && (gameContinued == true))
 		{	
-			//if the election has been set up, go ahead and populate the candidates
-			if (Game.electionSetup(getPlayerGame())==true)
+			//if the election has been set up and this player has not voted, go ahead and populate the candidates
+			if ((Game.electionSetup(getPlayerGame())==true) && ((Game.electionVoteCheck(getPrimaryKey(), getPlayerGame()) == false)))
 			{									     
 			     electionUpdate();
 			}			
@@ -456,14 +456,14 @@ public class Main {
 		GamesDisplay.setLayout(null);
 							
 		//If this user is in a game, retrieve all games and let them continue
-		System.out.print("Entering 582 GUI\n");
+		System.out.print("Entering 459 GUI\n");
 		
 		//Ensure this player has logged in 
 		if((loggedIn == true))
 		{					    
 			if (Game.inGameCheck(getPrimaryKey()) == true)
 			{
-				System.out.print("Entering 567 GUI\n");  
+				System.out.print("Entering 466 GUI\n");  
 				//Function to retrieve games player is in, displays in a dropdown menu
 				retrieveGames();
 				//Probably need to call all possible panel combinations here to redraw
@@ -497,7 +497,7 @@ public class Main {
 	
 	//Begin Function Methods:
 	
-	//This function updates the candidates panelfor a player
+	//This function updates the candidates panel for a player
 	public void candidatesUpdate()
 	{
 		//Ensure this player has logged in and set the game they are in before creating values
@@ -559,7 +559,7 @@ public class Main {
 			    		Candidate.setVisible(false);
 					}
 					if((Game.electionSetup(getPlayerGame())==false))
-					{
+					{					
 						StartMenu.setVisible(true);	
 			    		Candidate.setVisible(false);
 					}
@@ -578,210 +578,254 @@ public class Main {
 			lblWaysAndMeans_1.setFont(new Font("Wide Latin", Font.PLAIN, 25));
 			lblWaysAndMeans_1.setBounds(37, 38, 409, 43);
 			Candidate.add(lblWaysAndMeans_1);
+			
+			return;
 		}
 	}
 	
-	//This function updates the election results
+	//This function updates the election candidates for which to vote on
 	public void electionUpdate()
 	{
-		candidate = Game.getCandidates(0, getPlayerGame()) + " RP: ";
-		final JRadioButton candidate0 = new JRadioButton(candidate + Game.getCandidatesRP(0, getPlayerGame()));
-		candidate0.setBounds(26, 82, 124, 23);
-		Election.add(candidate0);								
-		
-		candidate = Game.getCandidates(1, getPlayerGame()) + " RP: ";
-		final JRadioButton candidate1 = new JRadioButton(candidate + Game.getCandidatesRP(1, getPlayerGame()));
-		candidate1.setBounds(26, 108, 124, 23);
-		Election.add(candidate1);				
-		
-		candidate = Game.getCandidates(2, getPlayerGame()) + " RP: ";
-		final JRadioButton candidate2 = new JRadioButton(candidate + Game.getCandidatesRP(2, getPlayerGame()));
-		candidate2.setBounds(26, 134, 124, 23);
-		Election.add(candidate2);
-		
-		candidate = Game.getCandidates(3, getPlayerGame()) + " RP: ";
-		final JRadioButton candidate3 = new JRadioButton(candidate + Game.getCandidatesRP(3, getPlayerGame()));
-		candidate3.setBounds(26, 160, 124, 23);
-		Election.add(candidate3);					
-		
-		candidate = Game.getCandidates(4, getPlayerGame()) + " RP: ";
-		final JRadioButton candidate4 = new JRadioButton(candidate + Game.getCandidatesRP(4, getPlayerGame()));
-		candidate4.setBounds(152, 82, 130, 23);
-		Election.add(candidate4);
-		
-		candidate = Game.getCandidates(5, getPlayerGame()) + " RP: ";
-		final JRadioButton candidate5 = new JRadioButton(candidate + Game.getCandidatesRP(5, getPlayerGame()));
-		candidate5.setBounds(152, 108, 130, 23);
-		Election.add(candidate5);					
+		//Create an array that contains candidate RPs for this game
+		final int []candidatesRP =  Game.getCandidatesRP(getPlayerGame());
+		//Create an array that contains the candidate usernames for this game
+		final String []candidateUN = Game.getCandidates(getPlayerGame());
+
+		//Check to see if this player has already voted
+		if (Game.electionVoteCheck(getPrimaryKey(), getPlayerGame()) == false)
+		{					
+			candidate = candidateUN[0] + " RP: ";
+			final JRadioButton candidate0 = new JRadioButton(candidate + candidatesRP[0]);
+			candidate0.setBounds(26, 82, 124, 23);
+			Election.add(candidate0);								
 			
-		candidate = Game.getCandidates(6, getPlayerGame()) + " RP: ";
-		final JRadioButton candidate6 = new JRadioButton(candidate + Game.getCandidatesRP(6, getPlayerGame()));
-		candidate6.setBounds(152, 134, 130, 23);
-		Election.add(candidate6);					
-		
-		candidate = Game.getCandidates(7, getPlayerGame()) + " RP: ";
-		final JRadioButton candidate7 = new JRadioButton(candidate + Game.getCandidatesRP(7, getPlayerGame()));
-		candidate7.setBounds(152, 160, 130, 23);
-		Election.add(candidate7);					
-		
-		candidate = Game.getCandidates(8, getPlayerGame()) + " RP: ";
-		final JRadioButton candidate8 = new JRadioButton(candidate + Game.getCandidatesRP(8, getPlayerGame()));
-		candidate8.setBounds(294, 82, 130, 23);
-		Election.add(candidate8);				
-		
-		candidate = Game.getCandidates(9, getPlayerGame()) + " RP: ";
-		final JRadioButton candidate9 = new JRadioButton(candidate + Game.getCandidatesRP(9, getPlayerGame()));
-		candidate9.setBounds(294, 108, 130, 23);
-		Election.add(candidate9);	
-		
-		//Group all the radio buttons so we can retrieve data from them
-		ButtonGroup group = new ButtonGroup();
-		group.add(candidate0);
-		group.add(candidate1);
-	    group.add(candidate2);
-	    group.add(candidate3);
-	    group.add(candidate4);
-	    group.add(candidate5);
-	    group.add(candidate6);
-	    group.add(candidate7);
-	    group.add(candidate8);
-	    group.add(candidate9);
-	    
-	    JButton Electbtn = new JButton("Vote!");
-		Electbtn.setBounds(172, 213, 89, 23);
-		Election.add(Electbtn);
-		Electbtn.addMouseListener(new MouseAdapter() {
-			@Override
-			public void mouseClicked(MouseEvent arg0) {					
+			System.out.println("candidate: " + candidate + "\n");
 			
-				//Capture this user's vote selection and submit it to the database
-			    if (candidate0.isSelected())
-				{
-					vote = Game.getCandidates(0, getPlayerGame());	
-				}				    
-			    
-			    if (candidate1.isSelected())
-				{
-					vote = Game.getCandidates(1, getPlayerGame());	
+			candidate = candidateUN[1] + " RP: ";
+			final JRadioButton candidate1 = new JRadioButton(candidate + candidatesRP[1]);
+			candidate1.setBounds(26, 108, 124, 23);
+			Election.add(candidate1);				
+			
+			System.out.println("candidate: " + candidate + "\n");
+			
+			candidate = candidateUN[2] + " RP: ";
+			final JRadioButton candidate2 = new JRadioButton(candidate + candidatesRP[2]);
+			candidate2.setBounds(26, 134, 124, 23);
+			Election.add(candidate2);
+			
+			System.out.println("candidate: " + candidate + "\n");
+			
+			candidate = candidateUN[3] + " RP: ";
+			final JRadioButton candidate3 = new JRadioButton(candidate + candidatesRP[3]);
+			candidate3.setBounds(26, 160, 124, 23);
+			Election.add(candidate3);					
+			
+			candidate = candidateUN[4] + " RP: ";
+			final JRadioButton candidate4 = new JRadioButton(candidate + candidatesRP[4]);
+			candidate4.setBounds(152, 82, 130, 23);
+			Election.add(candidate4);
+			
+			candidate = candidateUN[5] + " RP: ";
+			final JRadioButton candidate5 = new JRadioButton(candidate + candidatesRP[5]);
+			candidate5.setBounds(152, 108, 130, 23);
+			Election.add(candidate5);					
+				
+			candidate = candidateUN[6] + " RP: ";
+			final JRadioButton candidate6 = new JRadioButton(candidate + candidatesRP[6]);
+			candidate6.setBounds(152, 134, 130, 23);
+			Election.add(candidate6);					
+			
+			candidate = candidateUN[7] + " RP: ";
+			final JRadioButton candidate7 = new JRadioButton(candidate + candidatesRP[7]);
+			candidate7.setBounds(152, 160, 130, 23);
+			Election.add(candidate7);					
+			
+			candidate = candidateUN[8] + " RP: ";
+			final JRadioButton candidate8 = new JRadioButton(candidate + candidatesRP[8]);
+			candidate8.setBounds(294, 82, 130, 23);
+			Election.add(candidate8);				
+			
+			candidate = candidateUN[9] + " RP: ";
+			final JRadioButton candidate9 = new JRadioButton(candidate + candidatesRP[9]);
+			candidate9.setBounds(294, 108, 130, 23);
+			Election.add(candidate9);	
+			
+			//Group all the radio buttons so we can retrieve data from them
+			ButtonGroup group = new ButtonGroup();
+			group.add(candidate0);
+			group.add(candidate1);
+		    group.add(candidate2);
+		    group.add(candidate3);
+		    group.add(candidate4);
+		    group.add(candidate5);
+		    group.add(candidate6);
+		    group.add(candidate7);
+		    group.add(candidate8);
+		    group.add(candidate9);
+		    
+		    JButton Electbtn = new JButton("Vote!");
+			Electbtn.setBounds(172, 213, 89, 23);
+			Election.add(Electbtn);
+			Electbtn.addMouseListener(new MouseAdapter() {
+				@Override
+				public void mouseClicked(MouseEvent arg0) {					
+				
+					//Capture this user's vote selection and submit it to the database
+				    if (candidate0.isSelected())
+					{
+						vote = candidateUN[0];	
+					}				    
+				    
+				    if (candidate1.isSelected())
+					{
+						vote = candidateUN[1];	
+					}
+				    
+				    if (candidate2.isSelected())
+					{
+						vote = candidateUN[2];	
+					}
+				    
+				    if (candidate3.isSelected())
+					{
+						vote = candidateUN[3];	
+					}
+				    
+				    if (candidate4.isSelected())
+					{
+						vote = candidateUN[4];	
+					}
+				    
+				    if (candidate5.isSelected())
+					{
+						vote = candidateUN[5];	
+					}
+				    
+				    if (candidate6.isSelected())
+					{
+						vote = candidateUN[6];	
+					}
+				    
+				    if (candidate7.isSelected())
+					{
+						vote = candidateUN[7];	
+					}
+				    
+				    if (candidate8.isSelected())
+					{
+						vote = candidateUN[8];	
+					}
+				    
+				    if (candidate9.isSelected())
+					{
+						vote = candidateUN[9];	
+					}
+				    
+				    //Submit the vote to the database		
+				    Game.elect(vote, getPlayerGame(), getPrimaryKey());
+				    //Update the leader board
+				    ElectionResults.removeAll();						
+					resultsUpdate();
+					ElectionResults.validate();
+				    ElectionResults.repaint();
+				    
+					ElectionResults.setVisible(true);
+					Election.setVisible(false);
 				}
-			    
-			    if (candidate2.isSelected())
-				{
-					vote = Game.getCandidates(2, getPlayerGame());	
-				}
-			    
-			    if (candidate3.isSelected())
-				{
-					vote = Game.getCandidates(3, getPlayerGame());	
-				}
-			    
-			    if (candidate4.isSelected())
-				{
-					vote = Game.getCandidates(4, getPlayerGame());	
-				}
-			    
-			    if (candidate5.isSelected())
-				{
-					vote = Game.getCandidates(5, getPlayerGame());	
-				}
-			    
-			    if (candidate6.isSelected())
-				{
-					vote = Game.getCandidates(6, getPlayerGame());	
-				}
-			    
-			    if (candidate7.isSelected())
-				{
-					vote = Game.getCandidates(7, getPlayerGame());	
-				}
-			    
-			    if (candidate8.isSelected())
-				{
-					vote = Game.getCandidates(8, getPlayerGame());	
-				}
-			    
-			    if (candidate9.isSelected())
-				{
-					vote = Game.getCandidates(9, getPlayerGame());	
-				}
-			    
-			    //Submit the vote to the database		
-			    Game.elect(vote, getPlayerGame());
-			    //Update the leader board
-			    ElectionResults.removeAll();						
-				resultsUpdate();
-				ElectionResults.validate();
-			    ElectionResults.repaint();
-			    
-				ElectionResults.setVisible(true);
-				Election.setVisible(false);
-			}
-		});
-	
-		JLabel lblTheElectionFor = DefaultComponentFactory.getInstance().createLabel("The Election for president is now available!");
-		lblTheElectionFor.setFont(new Font("Tahoma", Font.BOLD, 11));
-		lblTheElectionFor.setBounds(94, 23, 330, 14);
-		Election.add(lblTheElectionFor);
+			}); 
 		
-		JLabel lblPleaseVoteFor = DefaultComponentFactory.getInstance().createLabel("Please vote for the candidate you would like to have as president:");
-		lblPleaseVoteFor.setFont(new Font("Tahoma", Font.BOLD, 11));
-		lblPleaseVoteFor.setBounds(26, 48, 377, 14);
-		Election.add(lblPleaseVoteFor);	
+			JLabel lblTheElectionFor = DefaultComponentFactory.getInstance().createLabel("The Election for president is now available!");
+			lblTheElectionFor.setFont(new Font("Tahoma", Font.BOLD, 11));
+			lblTheElectionFor.setBounds(94, 23, 330, 14);
+			Election.add(lblTheElectionFor);
+			
+			JLabel lblPleaseVoteFor = DefaultComponentFactory.getInstance().createLabel("Please vote for the candidate you would like to have as president:");
+			lblPleaseVoteFor.setFont(new Font("Tahoma", Font.BOLD, 11));
+			lblPleaseVoteFor.setBounds(26, 48, 377, 14);
+			Election.add(lblPleaseVoteFor);	
+			
+			return;
+		}
+		
+		//This player has already voted, take them to election results
+		else if (Game.electionVoteCheck(getPrimaryKey(), getPlayerGame()) == true)
+		{
+			//Update the leader board
+		    ElectionResults.removeAll();						
+			resultsUpdate();
+			ElectionResults.validate();
+			ElectionResults.paintImmediately(ElectionResults.getVisibleRect());//Force an immediate update
+		    
+		    //Display panel
+		    Election.setVisible(false);
+			ElectionResults.setVisible(true);
+						
+			return;
+		}
 	}//End of election update		
 	
 	//This function sets the results of the running election
 	public void resultsUpdate()
 	{
+		//Create an array to hold current election results, size 10
+		String[] electionResults = Game.getElectionResults(getPlayerGame());
+		
 		JButton btnQuit = new JButton("Quit");
 		btnQuit.setBounds(172, 228, 89, 23);
 		ElectionResults.add(btnQuit);
 		
-		electionResult = Game.getElectionResults(getPlayerGame(), 0);
+		electionResult = electionResults[0];
 		JLabel First = DefaultComponentFactory.getInstance().createLabel(electionResult);
 		First.setBounds(172, 55, 234, 14);
-		ElectionResults.add(First);
+		ElectionResults.add(First);		
 		
-		electionResult = Game.getElectionResults(getPlayerGame(), 1);
+		System.out.println("candidate: " + electionResult + " player game: " + getPlayerGame() + "\n");
+		
+		electionResult = electionResults[1];
 		JLabel Second = DefaultComponentFactory.getInstance().createLabel(electionResult);
 		Second.setBounds(172, 72, 234, 14);
 		ElectionResults.add(Second);
 		
-		electionResult = Game.getElectionResults(getPlayerGame(), 2);
+		System.out.println("candidate: " + electionResult + "\n");
+		
+		electionResult = electionResults[2];
 		JLabel Third = DefaultComponentFactory.getInstance().createLabel(electionResult);
 		Third.setBounds(172, 89, 234, 14);
 		ElectionResults.add(Third);
 		
-		electionResult = Game.getElectionResults(getPlayerGame(), 3);
+		System.out.println("candidate: " + electionResult + "\n");
+		
+		electionResult = electionResults[3];
 		JLabel Fourth = DefaultComponentFactory.getInstance().createLabel(electionResult);
 		Fourth.setBounds(172, 104, 234, 14);
 		ElectionResults.add(Fourth);
 		
-		electionResult = Game.getElectionResults(getPlayerGame(), 4);
+		electionResult = electionResults[4];
 		JLabel Fifth = DefaultComponentFactory.getInstance().createLabel(electionResult);
 		Fifth.setBounds(172, 119, 237, 14);
 		ElectionResults.add(Fifth);
 		
-		electionResult = Game.getElectionResults(getPlayerGame(), 5);
+		electionResult = electionResults[5];
 		JLabel Sixth = DefaultComponentFactory.getInstance().createLabel(electionResult);
 		Sixth.setBounds(172, 134, 234, 14);
 		ElectionResults.add(Sixth);
 		
-		electionResult = Game.getElectionResults(getPlayerGame(), 6);
+		electionResult = electionResults[6];
 		JLabel Seventh = DefaultComponentFactory.getInstance().createLabel(electionResult);
 		Seventh.setBounds(172, 152, 234, 14);
 		ElectionResults.add(Seventh);
 		
-		electionResult = Game.getElectionResults(getPlayerGame(), 7);
+		electionResult = electionResults[7];
 		JLabel Eigth = DefaultComponentFactory.getInstance().createLabel(electionResult);
 		Eigth.setBounds(172, 170, 234, 14);
 		ElectionResults.add(Eigth);
 		
-		electionResult = Game.getElectionResults(getPlayerGame(), 8);
+		electionResult = electionResults[8];
 		JLabel Ninth = DefaultComponentFactory.getInstance().createLabel(electionResult);
 		Ninth.setBounds(172, 188, 234, 14);
 		ElectionResults.add(Ninth);
 		
-		electionResult = Game.getElectionResults(getPlayerGame(), 9);
+		electionResult = electionResults[9];
 		JLabel Tenth = DefaultComponentFactory.getInstance().createLabel(electionResult);
 		Tenth.setBounds(172, 203, 234, 14);
 		ElectionResults.add(Tenth);
@@ -790,16 +834,19 @@ public class Main {
 		lblElectionResults.setFont(new Font("Tahoma", Font.BOLD, 20));
 		lblElectionResults.setBounds(141, 11, 216, 33);
 		ElectionResults.add(lblElectionResults);
+		//Display panel
+	    
 		//Quit the program
 		btnQuit.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				System.exit(0);
 			}
 		});
+		
+		return;
 	}//End of resultsUpdate
 	
 	//This function sets the list of radio buttons to select the game player wants to play after login
-	//****************Next time-- Once game selected, the GUI needs to redraw all fields on tables to represent the new game
 	public void retrieveGames()
 	{
 		Vector<Integer> pGames = new Vector<Integer>();//use games.size() to get final size of Vector		
@@ -808,7 +855,6 @@ public class Main {
 		
 		//Test a method
 		Game.gameStartedCheck(getPlayerGame());
-		//Game.inGameCheck(1);
 		
 		//This build uses java 1.8.2, will throw an error if using anything below Java 7
 		final JComboBox<Integer> comboBox = new JComboBox<Integer>(pGames);
@@ -847,21 +893,7 @@ public class Main {
 					
 			    	//Check to see if this game has started, if so go to candidates (eventually go to current events)
 			    	if (Game.gameStartedCheck(getPlayerGame()) == true)
-			    	{				    					    	
-				    	//if the election has been set up, go ahead and populate the candidates
-						if (Game.electionSetup(getPlayerGame())==true)
-						{
-							//Update Election panel
-					    	Election.removeAll();	
-					    	electionUpdate();
-					    	Election.validate();
-					    	Election.repaint();
-					    	
-					    	System.out.println("setup election 854\n");
-						}
-				    													
-						System.out.println("929\n");
-						
+			    	{				    					    					    							
 						//Election not set up, and user is a candidate--go to candidate selection
 						if(candidateCheck == true)
 						{
@@ -883,11 +915,33 @@ public class Main {
 							{								
 								//Election set up, go to election page
 								if ((Game.electionSetup(getPlayerGame())==true))
-								{
-									Election.setVisible(true);	
-						    		GamesDisplay.setVisible(false);
-						    		
-						    		System.out.println("repainted 950\n");
+								{									
+									if((Game.electionVoteCheck(getPrimaryKey(), getPlayerGame()) == false))
+									{
+										//Update the election panel
+									    Election.removeAll();						
+										electionUpdate();
+										Election.validate();
+									    Election.repaint();
+										
+										Election.setVisible(true);	
+							    		GamesDisplay.setVisible(false);
+							    		System.out.println("repainted 950\n");
+									}
+									
+						    		else if ((Game.electionVoteCheck(getPrimaryKey(), getPlayerGame()) == true))
+						    		{
+							    		//Update the leader board
+									    ElectionResults.removeAll();						
+										resultsUpdate();
+										ElectionResults.validate();
+										ElectionResults.paintImmediately(ElectionResults.getVisibleRect());//Force an immediate update
+									    
+									    //Display panel
+									    GamesDisplay.setVisible(false);
+										ElectionResults.setVisible(true);
+						    		}
+						    		return;
 								}
 								//Election not set up, return to start menu
 								if((Game.electionSetup(getPlayerGame())==false))
@@ -896,7 +950,10 @@ public class Main {
 									GamesDisplay.setVisible(false);
 						    		
 						    		System.out.println("repainted 957\n");
-								}							
+						    		
+						    		return;
+								}	
+							
 							}
 				    }
 			    	
@@ -911,6 +968,8 @@ public class Main {
 			    		
 			    		GamesDisplay.setVisible(false);
 			    		StartGame.setVisible(true);
+			    		
+			    		return;
 			    	}
 			    }
 			}
@@ -941,7 +1000,7 @@ public class Main {
 			@Override
 			public void mouseClicked(MouseEvent arg0) {
 				//Retrieve the selected game				
-				long selectedGame =  (Long) comboBox.getSelectedItem();
+				int selectedGame = (Integer)comboBox.getSelectedItem();
 				
 				//Add this player to this game
 				Game.addToGame(getPrimaryKey(), selectedGame);
@@ -964,6 +1023,8 @@ public class Main {
 		    	{
 		    		JoinGame.setVisible(false);	
 		    		StartGame.setVisible(true);
+		    		
+		    		return;
 		    	}		    	
 			    	//Open the startGame page IF the game has not started, otherwise go to candidate stuff
 			    	else if(Game.gameStartedCheck(getPlayerGame()) == true)
@@ -981,6 +1042,8 @@ public class Main {
 					    	electionUpdate();
 					    	Election.validate();
 					    	Election.repaint();
+					    	
+					    	return;
 						}
 				    	
 						//Go to candidate methods
@@ -993,6 +1056,8 @@ public class Main {
 							//Make a jpanel visible for answering candidacy
 							JoinGame.setVisible(false);
 							Candidate.setVisible(true);
+							
+							return;
 						}
 						
 							else if (candidateCheck == false)
@@ -1004,11 +1069,15 @@ public class Main {
 								{
 									Election.setVisible(true);	
 						    		JoinGame.setVisible(false);
+						    		
+						    		return;
 								}
 									else if((Game.electionSetup(getPlayerGame())==false))
 									{
 										StartMenu.setVisible(true);	
 							    		JoinGame.setVisible(false);
+							    		
+							    		return;
 									}							
 							}
 			    	}			
@@ -1033,6 +1102,8 @@ public class Main {
 			public void mouseClicked(MouseEvent arg0) {
 				StartGame.setVisible(false);
 				StartMenu.setVisible(true);
+				
+				return;
 			}
 		});
 		btnMainMenu.setBounds(78, 215, 111, 23);
@@ -1044,6 +1115,8 @@ public class Main {
 			public void mouseClicked(MouseEvent arg0) {
 				//Quit out of program
 				System.exit(0);
+				
+				return;
 			}
 		});
 		btnQuit_1.setBounds(220, 215, 102, 23);
@@ -1054,8 +1127,6 @@ public class Main {
 		StartGame.add(lblNumberOfPlayers);
 		
 		//Check to see if at least 10 players are in this game, if so allow a player to start the game
-				//******Current game of user held in Game.java, consider moving all that to the GUI, and having the func's that use
-				//         that data to accept arg's instead of referring in the source
 		if (Game.inGameCount(getPlayerGame()) >= 10)
 		{
 			JButton btnStartGame_1 = new JButton("Start Game!");
@@ -1071,7 +1142,9 @@ public class Main {
 			    	Candidate.repaint();
 				    
 			    	StartGame.setVisible(false);
-			    	Candidate.setVisible(true);			    	
+			    	Candidate.setVisible(true);
+
+			    	return;
 				}
 			});
 			btnStartGame_1.setBounds(139, 163, 108, 23);
@@ -1092,17 +1165,21 @@ public class Main {
 	//Set the primary key value for the class
 	public void setPrimaryKey(int primarykey) {
 		this.primarykey = primarykey;
+		
+		return;
 	}
 	//return the primary key for the class
 	public int getPrimaryKey() {
 		return primarykey;
 	}
 	//Set the primary key value for the class
-	public void setPlayerGame(long gameID) {
+	public void setPlayerGame(int gameID) {
 		this.playerGame = gameID;
+		
+		return;
 	}
 	//return the primary key for the class
-	public long getPlayerGame() {
+	public int getPlayerGame() {
 		return playerGame;
 	}
 }//End of program
