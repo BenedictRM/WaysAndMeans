@@ -7,10 +7,8 @@ import java.sql.SQLException;
 import java.util.Vector;
 import com.mysql.jdbc.Statement;//To connect to the database
 
-//To create a new game call INSERT INTO game (CREATED) values (null);
+//***To create a new game call INSERT INTO game (CREATED) values (null), add a function called 'create game' to let users create new games
 
-//***We need to add a join game option and an inGame table from which players can join or drop out of games freely--this will solidify the db and its functionality
-//***I think the easiest way to do this currently is to just use the 'player' table and have it reference a parent table that stores all users itself, rename this table if this is done
 public class Game {	 
 	
 	//Class variables: Keep out of this class to keep it like a state machine	
@@ -32,8 +30,8 @@ public class Game {
 		Connection connect = null;
 		
 		try{
-			//zeroDateTimeBehavior=convertToNull converts 0:00:00etc. timestamps to null preventing the system from crashing
-			connect = DriverManager.getConnection("jdbc:mysql://localhost:3306/game?zeroDateTimeBehavior=convertToNull", "root","Scruffy#1");
+			//zeroDateTimeBehavior=convertToNull converts 0:00:00etc. time-stamps to null preventing the system from crashing
+			connect = DriverManager.getConnection("jdbc:mysql://localhost:3306/game?zeroDateTimeBehavior=convertToNull", "Your UN","Your Password");
 		}catch(SQLException o){
 			o.printStackTrace();
 		}
@@ -148,114 +146,7 @@ public class Game {
 		}
 		System.out.println("Your profile has now been deleted from the database");
 	}
-	
-	//This function is used to check if a logged in player is in a game, if not ask them to join a game
-	public static boolean inGameCheck (int pk)
-	{
-		boolean inGame = false;
-		Connection connect = null;
-		Statement statement;
-		ResultSet resultSet;
-		
-		//Connect to jar file
-		connection();
-			
-		try
-		{
-			 connect = dbConnection();
-		     statement = (Statement) connect.createStatement();
-		     
-		     //Return the player_to_game table with associated players
-		     resultSet = statement.executeQuery("SELECT P.APP_USERS_PK, G.PLAYER_ID, G.GAME_ID FROM player P, player_to_game G " +
-		     		                               "WHERE P.APP_USERS_PK = G.PLAYER_ID;");
-		     
-		     //retrieve games for this player	
-		     while (resultSet.next()) 
-			 {      				    		       			        			    	 
-		    	    //User found database
-			        if (pk == resultSet.getInt("APP_USERS_PK")) 
-			        {			        			    				    
-			        	//This player is already in a valid game
-			        	if (resultSet.getInt("GAME_ID") > 0)
-	        			{
-			        		//Disconnect from the database
-		       		        connect.close();
-		       		        statement.close();				 				
-		       			    resultSet.close(); 
-		       			    //User in a game
-		       			    inGame = true;
-		       			    
-			        		return inGame;
-	        			}
-				        	//This player is not in a game
-			        		else
-				        	{
-			        			//Disconnect from the database
-			       		        connect.close();
-			       		        statement.close();				 				
-			       			    resultSet.close();
-			        			//User not found or user not in game
-			       			    return inGame;			        		
-				        	}			        	
-			        }
-			 }
-		     
-		     //Disconnect from the database and close statements (might be possible to hack the statements if they stay open)
-		     connect.close();
-		     statement.close();				 				
-			 resultSet.close();		     
-		}
-		
-			catch(SQLException o)
-			{				
-				o.printStackTrace();
-			}
-		//Player not found, can't be in game (this will be the default return)
-		return inGame;
-	}
-	
-	//This function returns a Vector of available games for a player to join 
-	//Prereq: The games added to this vector cannot have already started
-	public static Vector <Integer> getAvailableGames()
-	{
-		//Since the there is in an unknown number of games at program start, use a Vector
-		Vector<Integer> games = new Vector<Integer>();//use games.size() to get final size of Vector	
-		Connection connect = null;
-		Statement statement;
-		ResultSet resultSet;
-		
-		//Connect to jar file
-		connection();
-		
-		try
-		{
-			 connect = dbConnection();
-		     statement = (Statement) connect.createStatement();
-		     
-		     //Return all games from game list that have not started
-		     resultSet = statement.executeQuery("SELECT G.PK_GAME_NUMBER from game G WHERE G.STARTED = 0;");
-		     
-		     //retrieve game ID's
-		     while (resultSet.next()) 
-			 {      				    		       			        			    	 
-		    	 //Add available games to vector
-		    	 games.addElement(new Integer(resultSet.getInt("PK_GAME_NUMBER")));    
-			 }
-		     
-		     //Disconnect from the database and close statements (might be possible to hack the statements if they stay open)
-		     connect.close();
-		     statement.close();				 				
-			 resultSet.close();		     
-		}
-		
-			catch(SQLException o)
-			{				
-				o.printStackTrace();
-			}
-		//Return the vector of available games
-		return games;
-	}
-	
+				
 	//This function is used to add a user to a game, sets their initial values across several tables
 	//Prereq: No games can be called 'game 0', this will cause failures--games can be any positive integer, just increment as necessary
 	public static void addToGame (int pk, int playerGame)
@@ -287,16 +178,15 @@ public class Game {
 			 statement.setString(3, null);//Send a null value to trigger an update to joined timestamp			      					  	        					 	        					
 			 statement.executeUpdate();	
 			 
-			 //Set voting_history for this player for this game
-			 statement = connect.prepareStatement("INSERT INTO voting_history (FK_PLAYER_ID, FK_GAME_ID) VALUES (?,?);");	
-			 statement.setInt(1, dbpk);	
-			 statement.setInt(2, game);	
-			 statement.executeUpdate();
-			 
-			 //Retrieve the player_to_game PK for this user to add to the player_role table
+			 //Retrieve the player_to_game PK for this user to add to the player_role and voting_history tables
 			 resultSet = statement.executeQuery("SELECT P2G.PK FROM player_to_game P2G WHERE (P2G.PLAYER_ID = " + dbpk + ");");
 			 resultSet.next();//ADvance the resultSet cursor
 			 PK_P2G = resultSet.getInt("P2G.PK");   		
+			 
+			 //Set voting_history for this player for this game
+			 statement = connect.prepareStatement("INSERT INTO voting_history (FK_P2G) VALUES (?);");	
+			 statement.setInt(1, PK_P2G);	
+			 statement.executeUpdate();
 			 
 			 //Set default player_role for this player for this game
 			 statement = connect.prepareStatement("INSERT INTO player_role (FK_P2G) VALUES (?);");	
@@ -343,223 +233,7 @@ public class Game {
 			o.printStackTrace();
 		}			
 	}
-	
-	//Check to see if the game this player is actively in has started
-	//***May want to pass in an argument later that will let all games that have started be displayed, not just the one this user is in?
-	public static boolean gameStartedCheck(int playerGame)
-	{
-		Date startTime = null;
-		Connection connect = null;
-		Statement statement;
-		ResultSet resultSet;
-		//Connect to jar file
-		connection();
-		try
-		{
-			connect = dbConnection();//Connect to db
-			statement = (Statement) connect.createStatement();//Create the statement		
-			resultSet = statement.executeQuery("SELECT G.STARTED FROM game G WHERE G.PK_GAME_NUMBER = " + playerGame + ";");
-			
-			//Advance the resultSet, if true retrieve the date, otherwise it will be false on program start returning empty set
-			//  This if statement should block that from happening
-			if (resultSet.next() == true)
-			{
-				startTime = resultSet.getDate(1);
-			}
-			
-			//This game has not started
-			if (startTime == null)
-			{
-				//Disconnect from the database
-				connect.close();
-			    statement.close();				 				
-				resultSet.close();
-				
-				return false;
-			}
-			    //This game has started
-				else
-				{
-					//Disconnect from the database
-					connect.close();
-				    statement.close();				 				
-					resultSet.close();
-					
-					return true;
-				}						
-		}
-		catch(SQLException o)
-		{
-			o.printStackTrace();
-		}
-		//Default return false -- most likely game can still be joined		
-		return false;
-	}
-	
-	//Return all games this player is in
-	//Returns a Vector data type
-	public static Vector <Integer> getPlayerGames(int pk)
-	{
-		//Since the player is in an unknown number of games at program start, use a Vector
-		Vector<Integer> games = new Vector<Integer>();//use games.size() to get final size of Vector	
-		Connection connect = null;
-		Statement statement;
-		ResultSet resultSet;
-		
-		//Connect to jar file
-		connection();
-			
-		try
-		{
-			 connect = dbConnection();
-		     statement = (Statement) connect.createStatement();
-		     
-		     //Return player_to_game_list
-		     resultSet = statement.executeQuery("SELECT P.APP_USERS_PK, P2G.PLAYER_ID, P2G.GAME_ID FROM player P, player_to_game P2G " +
-		     		                               "WHERE P.APP_USERS_PK = P2G.PLAYER_ID;");
-		     
-		     //retrieve game ID's
-		     while (resultSet.next()) 
-			 {      				    		       			        			    	 
-		    	    //User found database
-			        if (pk == resultSet.getInt("APP_USERS_PK")) 
-			        {			        			    				    
-			        	//This player is already in a valid game
-			        	if (resultSet.getInt("GAME_ID") > 0)//0 is default non-game value
-	        			{
-			        		//Set this gameID to the vector 
-			        		games.addElement(new Integer(resultSet.getInt("GAME_ID")));
-			        		//step the vector
-	        			}			        				        	
-			        }
-			 }
-		     
-		     //Disconnect from the database and close statements (might be possible to hack the statements if they stay open)
-		     connect.close();
-		     statement.close();				 				
-			 resultSet.close();		     
-		}
-		
-			catch(SQLException o)
-			{				
-				o.printStackTrace();
-			}
-				
-		return games;		
-	}
-	
-	//while candidate list <= 10 and user rp >= to top candidates and user has not already replied nay to running return true else false
-	public static boolean candidateCheck (int pk, int playerGame)
-	{
-		//Sort the player list, if user is in top ten for rp's and has not replied y or n extend offer
-		int RP = 0;
-		int candidateCounter = 0;//Users who've accepted nomination
-		int answeredCounter = 0;//Users who've accepted or declined nomination
-		int userCounter = 0;//To count user in this game in total
-		boolean answered = false;
-		Connection connect = null;
-		Statement statement;
-		ResultSet resultSet;
-						
-		//Connect to jar file
-		connection();
-		
-		try
-		{
-			 connect = dbConnection();
-		     statement = (Statement) connect.createStatement();
-		     
-		     //Count the number of candidates in this game
-		     //resultSet = statement.executeQuery("SELECT COUNT(YEA) FROM candidates WHERE YEA = 1;");
-		     resultSet = statement.executeQuery("SELECT COUNT(C.YEA) FROM candidates C, " 
-		    		                             + "game G WHERE (C.YEA = 1) AND (C.FK_GAME = G.PK_GAME_NUMBER) AND (G.PK_GAME_NUMBER = " + playerGame +");");
-		     		    
-		     resultSet.next();
-		     candidateCounter = resultSet.getInt(1);
-		     
-		     //Count the number of users in this game who have answered yea or nay
-		     //resultSet = statement.executeQuery("SELECT COUNT(PK), FROM candidates WHERE YEA = 1 OR NAY = 1;");
-		     resultSet = statement.executeQuery("SELECT COUNT(C.PK) FROM candidates C, " +
-                      "game G WHERE (C.FK_GAME = G.PK_GAME_NUMBER) AND (C.YEA = 1 OR NAY = 1) AND (G.PK_GAME_NUMBER = " + playerGame +");");
-
-		     resultSet.next();
-		     answeredCounter = resultSet.getInt(1);
-		     
-		     //Count the number of users in this game's player database
-		     //resultSet = statement.executeQuery("SELECT COUNT(p.USERNAME) FROM player p;");
-		     //Count the number of users in this games player database
-		     resultSet = statement.executeQuery("SELECT COUNT(P.USERNAME) FROM player P, player_to_game P2G, game G WHERE" +
-		     		                             " (P.APP_USERS_PK = P2G.PLAYER_ID) AND (P2G.GAME_ID = G.PK_GAME_NUMBER) AND (G.PK_GAME_NUMBER = " + playerGame +");");
-		     resultSet.next();
-		     userCounter = resultSet.getInt(1);
-		     
-		     System.out.println("This game has " + candidateCounter + " viable candidates for president");
-		     System.out.println("This game has " + answeredCounter + " candidates who've accepted or declined nomination");
-		     System.out.println("This game has " + userCounter + " users in game");
-		    
-		     //***If candidate pool already 10 viable candidates (***need to add ->) or if all users have answered then skip all this***
-		     if (candidateCounter < 10)
-		     {
-		    	 System.out.println("ENTERING line 497\n");
-		    	 //Return the top ten users by rep points and FIFO join time from the same game
-			     resultSet = statement.executeQuery("SELECT P.APP_USERS_PK, P.REPUTATION_POINTS, C.YEA, C.NAY " +
-			     		"FROM player P, candidates C, game G WHERE (P.APP_USERS_PK = C.FK_PLAYER) AND (C.YEA = 0 AND C.NAY = 0) AND (C.FK_GAME = G.PK_GAME_NUMBER) AND (G.PK_GAME_NUMBER = " + playerGame +") "  +
-			     		"ORDER BY P.REPUTATION_POINTS, P.APP_USERS_PK LIMIT 10;");
-			     
-			     //retrieve rp's FOR THIS USER	
-			     while (resultSet.next()) 
-				 {      				    		       			        			    	 
-			    	    //User found in top ten!
-				        if (pk == resultSet.getInt("APP_USERS_PK")) 
-				        {			        			    				    
-				        	//This user was found in the top ten
-				        	RP = resultSet.getInt("REPUTATION_POINTS");						       
-				        	break;
-				        }
-				 }
-			     
-			     //Now check to see if this user has already entered the candidates table with a yea or nay, if not then invite them to do so
-			     //If RP is still 0 then this user wasn't found in the top ten qualified candidates and this code will be skipped
-			     if (RP > 0)
-			     {	    	 
-			    	  resultSet = statement.executeQuery("select * from candidates C, game G WHERE (C.FK_GAME = G.PK_GAME_NUMBER) AND (G.PK_GAME_NUMBER = " + playerGame + ");");			          
-			    	  //Check to see if this user has already decided to accept or decline nomination
-			          while (resultSet.next())
-			          {			        	  			        	 
-			        	  if (pk == resultSet.getInt("FK_PLAYER"))
-			        	  {
-			        		  if (resultSet.getInt("Yea") == 1 || resultSet.getInt("Nay") == 1)
-			        		  {
-			        			  //This user has already decided whether to run or not
-			        			  answered = true;
-			        			  break;
-			        		  }
-			              }
-			          }
-			          //This user qualifies to run and has not replied to their offer to run  
-	        	      if (answered == false)
-	        		  {        			  	        	    	  	        	    	  
-	        	    	  return true;
-	        		  }		        	  		          		        	  
-			     }
-			     		    		     
-				 //Disconnect from the database
-			     connect.close();
-			     statement.close();				 				
-				 resultSet.close();
-				 
-				 //Either we have all the candidates, or this user has responded already, or this user doesn't qualify to run
-				 return false;
-			}
-		}
-		catch(SQLException o)
-		{
-			o.printStackTrace();
-		}
-		//Default return, don't risk adding candidates in case an error happens that sends the code here
-		return false;
-	}
-	
+							
 	//This function will be called to add a user's response to running for president to the database
 	public static void candidateAdd (String ans, int pk)
 	{
@@ -701,19 +375,20 @@ public class Game {
 		{			
 			//Connect to the DB
 			connect = dbConnection();
-			//***NOTE that to send a string for comparison you must encapsulate the string in quotes like: '" + value + "'
+			//NOTE that to send a string for comparison you must encapsulate the string in quotes like: '" + value + "'
 			statement = connect.prepareStatement("UPDATE election E, game G SET E.YEA = E.YEA + (?) WHERE (E.CANDIDATE = '" + vote + "') AND (E.FK_GAME = G.PK_GAME_NUMBER) AND (G.PK_GAME_NUMBER = " + playerGame +");");
 			statement.setInt(1, 1);
 			statement.executeUpdate();
 			
 			//Update voting history table
-			statement = connect.prepareStatement("UPDATE voting_history V SET V.ELECTION = 1 WHERE (V.FK_PLAYER_ID = " + pk + ") AND (V.FK_GAME_ID = " + playerGame + ");");		
+			statement = connect.prepareStatement("UPDATE voting_history V, player_to_game P2G SET V.ELECTION = 1 WHERE (V.FK_P2G = P2G.PK) AND (P2G.PLAYER_ID = " + pk + ") AND (P2G.GAME_ID = " + playerGame + ");");		
 			statement.executeUpdate();
 			
 			//Disconnect from the database
 			connect.close();
 			statement.close();		
 		}
+		
 		catch(SQLException o)
 		{
 			o.printStackTrace();
@@ -753,13 +428,242 @@ public class Game {
 		    return playersInGame;		
 	    }
 		
-	//Catch any errors	
-	catch(SQLException o)
-	{
-		o.printStackTrace();
-	}
+		//Catch any errors	
+		catch(SQLException o)
+		{
+			o.printStackTrace();
+		}
 		
 		return playersInGame;
+	}
+	
+	//This function is used to check if a logged in player is in a game, if not ask them to join a game
+	public static boolean inGameCheck (int pk)
+	{
+		boolean inGame = false;
+		Connection connect = null;
+		Statement statement;
+		ResultSet resultSet;
+		
+		//Connect to jar file
+		connection();
+			
+		try
+		{
+			 connect = dbConnection();
+		     statement = (Statement) connect.createStatement();
+		     
+		     //Return the player_to_game table with associated players
+		     resultSet = statement.executeQuery("SELECT P.APP_USERS_PK, G.PLAYER_ID, G.GAME_ID FROM player P, player_to_game G " +
+		     		                               "WHERE P.APP_USERS_PK = G.PLAYER_ID;");
+		     
+		     //retrieve games for this player	
+		     while (resultSet.next()) 
+			 {      				    		       			        			    	 
+		    	    //User found database
+			        if (pk == resultSet.getInt("APP_USERS_PK")) 
+			        {			        			    				    
+			        	//This player is already in a valid game
+			        	if (resultSet.getInt("GAME_ID") > 0)
+	        			{
+			        		//Disconnect from the database
+		       		        connect.close();
+		       		        statement.close();				 				
+		       			    resultSet.close(); 
+		       			    //User in a game
+		       			    inGame = true;
+		       			    
+			        		return inGame;
+	        			}
+				        	//This player is not in a game
+			        		else
+				        	{
+			        			//Disconnect from the database
+			       		        connect.close();
+			       		        statement.close();				 				
+			       			    resultSet.close();
+			        			//User not found or user not in game
+			       			    return inGame;			        		
+				        	}			        	
+			        }
+			 }
+		     
+		     //Disconnect from the database and close statements (might be possible to hack the statements if they stay open)
+		     connect.close();
+		     statement.close();				 				
+			 resultSet.close();		     
+		}
+		
+		catch(SQLException o)
+		{				
+			o.printStackTrace();
+		}
+		//Player not found, can't be in game (this will be the default return)
+		return inGame;
+	}
+	
+	//Check to see if the game this player is actively in has started
+	//***May want to pass in an argument later that will let all games that have started be displayed, not just the one this user is in?
+	public static boolean gameStartedCheck(int playerGame)
+	{
+		Date startTime = null;
+		Connection connect = null;
+		Statement statement;
+		ResultSet resultSet;
+		//Connect to jar file
+		connection();
+		try
+		{
+			connect = dbConnection();//Connect to db
+			statement = (Statement) connect.createStatement();//Create the statement		
+			resultSet = statement.executeQuery("SELECT G.STARTED FROM game G WHERE G.PK_GAME_NUMBER = " + playerGame + ";");
+			
+			//Advance the resultSet, if true retrieve the date, otherwise it will be false on program start returning empty set
+			//  This if statement should block that from happening
+			if (resultSet.next() == true)
+			{
+				startTime = resultSet.getDate(1);
+			}
+			
+			//This game has not started
+			if (startTime == null)
+			{
+				//Disconnect from the database
+				connect.close();
+			    statement.close();				 				
+				resultSet.close();
+				
+				return false;
+			}
+			    //This game has started
+				else
+				{
+					//Disconnect from the database
+					connect.close();
+				    statement.close();				 				
+					resultSet.close();
+					
+					return true;
+				}						
+		}
+		catch(SQLException o)
+		{
+			o.printStackTrace();
+		}
+		//Default return false -- most likely game can still be joined		
+		return false;
+	}
+	
+	//while candidate list <= 10 and user rp >= to top candidates and user has not already replied nay to running return true else false
+	public static boolean candidateCheck (int pk, int playerGame)
+	{
+		//Sort the player list, if user is in top ten for rp's and has not replied y or n extend offer
+		int RP = 0;
+		int candidateCounter = 0;//Users who've accepted nomination
+		int answeredCounter = 0;//Users who've accepted or declined nomination
+		int userCounter = 0;//To count user in this game in total
+		boolean answered = false;
+		Connection connect = null;
+		Statement statement;
+		ResultSet resultSet;
+						
+		//Connect to jar file
+		connection();
+		
+		try
+		{
+			 connect = dbConnection();
+		     statement = (Statement) connect.createStatement();
+		     
+		     //Count the number of candidates in this game
+		     //resultSet = statement.executeQuery("SELECT COUNT(YEA) FROM candidates WHERE YEA = 1;");
+		     resultSet = statement.executeQuery("SELECT COUNT(C.YEA) FROM candidates C, " 
+		    		                             + "game G WHERE (C.YEA = 1) AND (C.FK_GAME = G.PK_GAME_NUMBER) AND (G.PK_GAME_NUMBER = " + playerGame +");");
+		     		    
+		     resultSet.next();
+		     candidateCounter = resultSet.getInt(1);
+		     
+		     //Count the number of users in this game who have answered yea or nay
+		     //resultSet = statement.executeQuery("SELECT COUNT(PK), FROM candidates WHERE YEA = 1 OR NAY = 1;");
+		     resultSet = statement.executeQuery("SELECT COUNT(C.PK) FROM candidates C, " +
+                      "game G WHERE (C.FK_GAME = G.PK_GAME_NUMBER) AND (C.YEA = 1 OR NAY = 1) AND (G.PK_GAME_NUMBER = " + playerGame +");");
+
+		     resultSet.next();
+		     answeredCounter = resultSet.getInt(1);
+		     
+		     //Count the number of users in this game's player database
+		     //resultSet = statement.executeQuery("SELECT COUNT(p.USERNAME) FROM player p;");
+		     //Count the number of users in this games player database
+		     resultSet = statement.executeQuery("SELECT COUNT(P.USERNAME) FROM player P, player_to_game P2G, game G WHERE" +
+		     		                             " (P.APP_USERS_PK = P2G.PLAYER_ID) AND (P2G.GAME_ID = G.PK_GAME_NUMBER) AND (G.PK_GAME_NUMBER = " + playerGame +");");
+		     resultSet.next();
+		     userCounter = resultSet.getInt(1);
+		     
+		     System.out.println("This game has " + candidateCounter + " viable candidates for president");
+		     System.out.println("This game has " + answeredCounter + " candidates who've accepted or declined nomination");
+		     System.out.println("This game has " + userCounter + " users in game");
+		    
+		     //***If candidate pool already 10 viable candidates (***need to add ->) or if all users have answered then skip all this***
+		     if (candidateCounter < 10)
+		     {
+		    	 System.out.println("ENTERING line 497\n");
+		    	 //Return the top ten users by rep points and FIFO join time from the same game
+			     resultSet = statement.executeQuery("SELECT P.APP_USERS_PK, P.REPUTATION_POINTS, C.YEA, C.NAY " +
+			     		"FROM player P, candidates C, game G WHERE (P.APP_USERS_PK = C.FK_PLAYER) AND (C.YEA = 0 AND C.NAY = 0) AND (C.FK_GAME = G.PK_GAME_NUMBER) AND (G.PK_GAME_NUMBER = " + playerGame +") "  +
+			     		"ORDER BY P.REPUTATION_POINTS, P.APP_USERS_PK LIMIT 10;");
+			     
+			     //retrieve rp's FOR THIS USER	
+			     while (resultSet.next()) 
+				 {      				    		       			        			    	 
+			    	    //User found in top ten!
+				        if (pk == resultSet.getInt("APP_USERS_PK")) 
+				        {			        			    				    
+				        	//This user was found in the top ten
+				        	RP = resultSet.getInt("REPUTATION_POINTS");						       
+				        	break;
+				        }
+				 }
+			     
+			     //Now check to see if this user has already entered the candidates table with a yea or nay, if not then invite them to do so
+			     //If RP is still 0 then this user wasn't found in the top ten qualified candidates and this code will be skipped
+			     if (RP > 0)
+			     {	    	 
+			    	  resultSet = statement.executeQuery("select * from candidates C, game G WHERE (C.FK_GAME = G.PK_GAME_NUMBER) AND (G.PK_GAME_NUMBER = " + playerGame + ");");			          
+			    	  //Check to see if this user has already decided to accept or decline nomination
+			          while (resultSet.next())
+			          {			        	  			        	 
+			        	  if (pk == resultSet.getInt("FK_PLAYER"))
+			        	  {
+			        		  if (resultSet.getInt("Yea") == 1 || resultSet.getInt("Nay") == 1)
+			        		  {
+			        			  //This user has already decided whether to run or not
+			        			  answered = true;
+			        			  break;
+			        		  }
+			              }
+			          }
+			          //This user qualifies to run and has not replied to their offer to run  
+	        	      if (answered == false)
+	        		  {        			  	        	    	  	        	    	  
+	        	    	  return true;
+	        		  }		        	  		          		        	  
+			     }
+			     		    		     
+				 //Disconnect from the database
+			     connect.close();
+			     statement.close();				 				
+				 resultSet.close();
+				 
+				 //Either we have all the candidates, or this user has responded already, or this user doesn't qualify to run
+				 return false;
+			}
+		}
+		catch(SQLException o)
+		{
+			o.printStackTrace();
+		}
+		//Default return, don't risk adding candidates in case an error happens that sends the code here
+		return false;
 	}
 	
 	//This function is used to check a new user's userName against the database to make sure their name is unique
@@ -782,7 +686,6 @@ public class Game {
 	        //Check the database user names against this user name
 	        while (resultSet.next())
 	        {
-	        	System.out.println(resultSet.getString(1)+"\n");
 	        	if(resultSet.getString(1).equals(i))
 	        	{
 	        		//Disconnect from the database
@@ -822,8 +725,8 @@ public class Game {
 			 connect = dbConnection();
 		     statement = (Statement) connect.createStatement();
 		     //Pull this player from voting_history
-		     resultSet = statement.executeQuery("SELECT ELECTION FROM voting_history V " 
-                     + "WHERE V.FK_PLAYER_ID = " + pk + " AND V.FK_GAME_ID = " + playerGame + ";");
+		     resultSet = statement.executeQuery("SELECT ELECTION FROM voting_history V, player_to_game P2G " 
+                     + "WHERE (V.FK_P2G = P2G.PK) AND (P2G.PLAYER_ID = " + pk + ") AND (P2G.GAME_ID = " + playerGame + ");");
 
 		     //Pull resultSet data
 		     resultSet.next();
@@ -833,6 +736,10 @@ public class Game {
 		    	 //This player has voted in this election
 		    	 voted = true;
 		     }
+		     //Disconnect from the database
+		     connect.close();
+		     statement.close();
+		     resultSet.close();
 		}
 		
 		catch(SQLException o)
@@ -842,6 +749,153 @@ public class Game {
 		
 		//Default is false
 		return voted;
+	}
+	
+	//This function determines if an election has been completed (***Currently just checks if everyone has voted, later add time constraint)
+	//Returns True if election has been completed, False if election is ongoing
+	public static boolean electionFinishedCheck(int playerGame)
+	{
+	    boolean finished = true;
+	    Connection connect = null;
+	    Statement statement;
+		ResultSet resultSet;
+		
+		//Connect to jar file
+		connection();
+		
+		try
+		{
+			 connect = dbConnection();
+		     statement = (Statement) connect.createStatement();
+			 //Do a sort on voting_history for this game, check the election column--if any values == 0 then election not completed
+		     resultSet = statement.executeQuery("SELECT ELECTION FROM voting_history V, player_to_game P2G " 
+                     + "WHERE (V.FK_P2G = P2G.PK) AND (P2G.GAME_ID = " + playerGame + ");");
+
+		     //Cycle through resultSet data
+		     while(resultSet.next())
+		     {
+			     if (resultSet.getInt("ELECTION") == 0)
+			     {
+			    	 //There are still players who need to vote in this election
+			    	 finished = false;
+			    	 
+			    	 //Disconnect from the database
+				     connect.close();
+				     statement.close();
+				     resultSet.close();
+			    	 
+			    	 return finished;
+			     }
+		     }
+		     
+		     //Disconnect from the database
+		     connect.close();
+		     statement.close();
+		     resultSet.close();
+		}
+		
+		catch(SQLException o)
+		{
+			o.printStackTrace();
+		}
+	    
+	    
+		//Default is True 
+		return finished;
+	}
+	
+	//This function returns a Vector of available games for a player to join 
+	//Prereq: The games added to this vector cannot have already started
+	public static Vector <Integer> getAvailableGames()
+	{
+		//Since the there is in an unknown number of games at program start, use a Vector
+		Vector<Integer> games = new Vector<Integer>();//use games.size() to get final size of Vector	
+		Connection connect = null;
+		Statement statement;
+		ResultSet resultSet;
+		
+		//Connect to jar file
+		connection();
+		
+		try
+		{
+			 connect = dbConnection();
+		     statement = (Statement) connect.createStatement();
+		     
+		     //Return all games from game list that have not started
+		     resultSet = statement.executeQuery("SELECT G.PK_GAME_NUMBER from game G WHERE G.STARTED = 0;");
+		     
+		     //retrieve game ID's
+		     while (resultSet.next()) 
+			 {      				    		       			        			    	 
+		    	 //Add available games to vector
+		    	 games.addElement(new Integer(resultSet.getInt("PK_GAME_NUMBER")));    
+			 }
+		     
+		     //Disconnect from the database and close statements (might be possible to hack the statements if they stay open)
+		     connect.close();
+		     statement.close();				 				
+			 resultSet.close();		     
+		}
+		
+			catch(SQLException o)
+			{				
+				o.printStackTrace();
+			}
+		//Return the vector of available games
+		return games;
+	}
+	
+	//Return all games this player is in
+	//Returns a Vector data type
+	public static Vector <Integer> getPlayerGames(int pk)
+	{
+		//Since the player is in an unknown number of games at program start, use a Vector
+		Vector<Integer> games = new Vector<Integer>();//use games.size() to get final size of Vector	
+		Connection connect = null;
+		Statement statement;
+		ResultSet resultSet;
+		
+		//Connect to jar file
+		connection();
+			
+		try
+		{
+			 connect = dbConnection();
+		     statement = (Statement) connect.createStatement();
+		     
+		     //Return player_to_game_list
+		     resultSet = statement.executeQuery("SELECT P.APP_USERS_PK, P2G.PLAYER_ID, P2G.GAME_ID FROM player P, player_to_game P2G " +
+		     		                               "WHERE P.APP_USERS_PK = P2G.PLAYER_ID;");
+		     
+		     //retrieve game ID's
+		     while (resultSet.next()) 
+			 {      				    		       			        			    	 
+		    	    //User found database
+			        if (pk == resultSet.getInt("APP_USERS_PK")) 
+			        {			        			    				    
+			        	//This player is already in a valid game
+			        	if (resultSet.getInt("GAME_ID") > 0)//0 is default non-game value
+	        			{
+			        		//Set this gameID to the vector 
+			        		games.addElement(new Integer(resultSet.getInt("GAME_ID")));
+			        		//step the vector
+	        			}			        				        	
+			        }
+			 }
+		     
+		     //Disconnect from the database and close statements (might be possible to hack the statements if they stay open)
+		     connect.close();
+		     statement.close();				 				
+			 resultSet.close();		     
+		}
+		
+			catch(SQLException o)
+			{				
+				o.printStackTrace();
+			}
+				
+		return games;		
 	}
 	
 	//Retrieve candidates reputation points list for this game's election for president

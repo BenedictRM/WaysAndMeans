@@ -57,7 +57,6 @@ public class Main {
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {				
-					Game.setPlayerRoles(1);
 					Main window = new Main();
 					window.frame.setVisible(true);
 				} catch (Exception e) {
