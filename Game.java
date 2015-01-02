@@ -93,7 +93,7 @@ public class Game {
 		     statement = (Statement) connect.createStatement();
 		     resultSet = statement.executeQuery("select * from player;");
 		     
-			while (resultSet.next()) 
+			 while (resultSet.next()) 
 			 {      
 				    //retrieve data				    				    
 			        dbUsername = resultSet.getString("USERNAME");
@@ -256,21 +256,24 @@ public class Game {
 		return games;
 	}
 	
-	//This function is used to add a user to a game, currently just use their pk to assign them to the only running game
-	//No games can be called 'game 0', this will cause failures--games can be any positive integer, just increment as necessary
-	public static void addToGame (int pk, int selectedGame)
+	//This function is used to add a user to a game, sets their initial values across several tables
+	//Prereq: No games can be called 'game 0', this will cause failures--games can be any positive integer, just increment as necessary
+	public static void addToGame (int pk, int playerGame)
 	{
 		Connection connect = null;
 		PreparedStatement statement = null; 
-		int game = selectedGame;//users game that they wish to join
+		ResultSet resultSet;//For retrieving database data
+		int game = playerGame;//users game that they wish to join
 		int dbpk = pk;//user's pk
+		int PK_P2G = 0;//This will set the FK player role for this user
+		
 		//Connect to jar file
 		connection();
 												
 		try
 		{
 			 connect = dbConnection();
-			 
+			 			 			 
 			 //Go ahead and add them to the candidate list now, that function will sort who is worthy of president there
 			 statement = connect.prepareStatement("INSERT INTO candidates (FK_PLAYER, FK_GAME) VALUES (?,?);");	
 			 statement.setInt(1, dbpk);	
@@ -290,9 +293,20 @@ public class Game {
 			 statement.setInt(2, game);	
 			 statement.executeUpdate();
 			 
+			 //Retrieve the player_to_game PK for this user to add to the player_role table
+			 resultSet = statement.executeQuery("SELECT P2G.PK FROM player_to_game P2G WHERE (P2G.PLAYER_ID = " + dbpk + ");");
+			 resultSet.next();//ADvance the resultSet cursor
+			 PK_P2G = resultSet.getInt("P2G.PK");   		
+			 
+			 //Set default player_role for this player for this game
+			 statement = connect.prepareStatement("INSERT INTO player_role (FK_P2G) VALUES (?);");	
+			 statement.setInt(1, PK_P2G);		
+			 statement.executeUpdate();
+			 
 			 //Disconnect from the database
 			 connect.close();
 			 statement.close();
+			 resultSet.close();
 		}
 			catch(SQLException o)
 			{				
@@ -490,7 +504,7 @@ public class Game {
 		    	 //Return the top ten users by rep points and FIFO join time from the same game
 			     resultSet = statement.executeQuery("SELECT P.APP_USERS_PK, P.REPUTATION_POINTS, C.YEA, C.NAY " +
 			     		"FROM player P, candidates C, game G WHERE (P.APP_USERS_PK = C.FK_PLAYER) AND (C.YEA = 0 AND C.NAY = 0) AND (C.FK_GAME = G.PK_GAME_NUMBER) AND (G.PK_GAME_NUMBER = " + playerGame +") "  +
-			     		"order by P.REPUTATION_POINTS, P.APP_USERS_PK LIMIT 10;");
+			     		"ORDER BY P.REPUTATION_POINTS, P.APP_USERS_PK LIMIT 10;");
 			     
 			     //retrieve rp's FOR THIS USER	
 			     while (resultSet.next()) 
@@ -675,7 +689,7 @@ public class Game {
 	}
 	
 	//This function sets player's vote for president, players votes are kept in voting_history table
-	public static void elect (String vote, int playerGame, int pk)
+	public static void elect (String vote, int pk, int playerGame)
 	{
 		PreparedStatement statement = null;
 		Connection connect = null;
@@ -790,7 +804,46 @@ public class Game {
 		}
 		return false;
 	}
-				
+	
+	//This function determines if a player has already cast a vote for this election
+	//returns true if player has already cast their vote, false if not
+	public static boolean electionVoteCheck(int pk, int playerGame)
+	{
+		boolean voted = false;
+		Connection connect = null;
+		Statement statement;
+		ResultSet resultSet;
+		
+		//Connect to jar file
+		connection();
+		
+		try
+		{
+			 connect = dbConnection();
+		     statement = (Statement) connect.createStatement();
+		     //Pull this player from voting_history
+		     resultSet = statement.executeQuery("SELECT ELECTION FROM voting_history V " 
+                     + "WHERE V.FK_PLAYER_ID = " + pk + " AND V.FK_GAME_ID = " + playerGame + ";");
+
+		     //Pull resultSet data
+		     resultSet.next();
+
+		     if (resultSet.getInt("ELECTION") == 1)
+		     {
+		    	 //This player has voted in this election
+		    	 voted = true;
+		     }
+		}
+		
+		catch(SQLException o)
+		{
+			o.printStackTrace();
+		}
+		
+		//Default is false
+		return voted;
+	}
+	
 	//Retrieve candidates reputation points list for this game's election for president
 	//returns an array of size 10 with all RPs 
 	public static int[] getCandidatesRP(int playerGame)
@@ -883,13 +936,15 @@ public class Game {
 		PreparedStatement statement = null;
 		ResultSet result = null;
 		String[] electionResults = new String[10];
-		//Connect to the database
-		connection();		
-		connect = dbConnection();
 		int j;
 		int votes = 0;
-		
+		//Connect to the jar file
+		connection();		
+						
 		try{				
+			//Connect to the database
+			connect = dbConnection();
+			
 			//collect the candidates
 			statement = connect.prepareStatement("select E.CANDIDATE, E.YEA from election E, game G WHERE (E.FK_GAME = G.PK_GAME_NUMBER) AND (G.PK_GAME_NUMBER = " + playerGame +") ORDER BY E.YEA DESC;");
 			result = statement.executeQuery();
@@ -916,43 +971,53 @@ public class Game {
 		return electionResults;
 	}
 	
-	//This function determines if a player has already voted for this election
-	//returns true if player has already cast their vote, false if not
-	public static boolean electionVoteCheck(int pk, int playerGame)
+	//This function sets all player roles for this game (President or Senator)
+	//Call this function after an election has been completed
+	//***Maybe just call this function inside an election completed boolean function in this class?
+	public static void setPlayerRoles(int playerGame)
 	{
-		boolean voted = false;
+		//Function variables
 		Connection connect = null;
-		Statement statement;
-		ResultSet resultSet;
-		
-		//Connect to jar file
+		PreparedStatement statement = null;
+		ResultSet result = null;
+		int P2G_PK;
+		//Connect to the jar file
 		connection();
 		
-		try
-		{
-			 connect = dbConnection();
-		     statement = (Statement) connect.createStatement();
-		     //Pull this player from voting_history
-		     resultSet = statement.executeQuery("SELECT ELECTION FROM voting_history V " 
-                     + "WHERE V.FK_PLAYER_ID = " + pk + " AND V.FK_GAME_ID = " + playerGame + ";");
-
-		     //Pull resultSet data
-		     resultSet.next();
-
-		     if (resultSet.getInt("ELECTION") == 1)
-		     {
-		    	 //This player has voted in this election
-		    	 voted = true;
-		     }
+		try{				
+			//Connect to the database
+			connect = dbConnection();
+						
+			//First set president for this game
+			statement = connect.prepareStatement("SELECT P2G.PK, E.YEA, E.CANDIDATE from election E, player_to_game P2G, candidates C, player P WHERE " + 
+					                               "(E.FK_CANDIDATES = C.PK) AND (C.FK_PLAYER= P.APP_USERS_PK) AND (P2G.PLAYER_ID = P.APP_USERS_PK) AND (E.FK_GAME = " + playerGame +") " +
+					                                  "AND (C.FK_GAME = " + playerGame + ") AND (P2G.GAME_ID = " + playerGame + ") ORDER BY E.YEA DESC LIMIT 1;");
+			result = statement.executeQuery();//Capture result set
+			result.next();//Bring up data into cursor
+			P2G_PK = result.getInt("P2G.PK");//Store the primary key for later
+            //Set this player to be president
+			statement = connect.prepareStatement("UPDATE player_role PR SET PR.PRESIDENT = 1 WHERE PR.FK_P2G = " + result.getInt("P2G.PK") + ";");
+			statement.executeUpdate();
+			
+			//Next set all other players in this game to be senators, exclude the current president
+			statement = connect.prepareStatement("SELECT P2G.PK from player_to_game P2G WHERE (P2G.GAME_ID = " + playerGame + ") AND (P2G.PK != " + P2G_PK  + ");");
+			result = statement.executeQuery();//Capture result set
+			//Set all senators
+			while (result.next()) 
+			{
+				statement = connect.prepareStatement("UPDATE player_role PR SET PR.SENATOR = 1 WHERE PR.FK_P2G = " + result.getInt("P2G.PK") + ";");
+				statement.executeUpdate();
+			}
+						
+			//Disconnect from the database
+			statement.close();
+			connect.close();
+			result.close();
 		}
-		
 		catch(SQLException o)
 		{
 			o.printStackTrace();
 		}
-		
-		//Default is false
-		return voted;
 	}
 }	
 

@@ -57,6 +57,7 @@ public class Main {
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {				
+					Game.setPlayerRoles(1);
 					Main window = new Main();
 					window.frame.setVisible(true);
 				} catch (Exception e) {
@@ -722,7 +723,7 @@ public class Main {
 					}
 				    
 				    //Submit the vote to the database		
-				    Game.elect(vote, getPlayerGame(), getPrimaryKey());
+				    Game.elect(vote, getPrimaryKey(), getPlayerGame());
 				    //Update the leader board
 				    ElectionResults.removeAll();						
 					resultsUpdate();
