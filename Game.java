@@ -54,7 +54,7 @@ public class Game {
 			//connect to the database
 			connect = dbConnection();
 			
-			statement = connect.prepareStatement("INSERT INTO player(APP_USERS_PK, USERNAME, PASSWORD, REPUTATION_POINTS) VALUES (?,?,?,?);");
+			statement = connect.prepareStatement("INSERT INTO player(_PK_PLAYER, USERNAME, PASSWORD, REPUTATION_POINTS) VALUES (?,?,?,?);");
 			statement.setString(1, pk);
 			statement.setString(2, username);
 			statement.setString(3, password);
@@ -101,7 +101,7 @@ public class Game {
 			        if ((dbUsername.equals(username)) && (dbPassword.equals(password)))
 			        {
 			        	
-			        	dbPrimarykey = resultSet.getInt("APP_USERS_PK");			     
+			        	dbPrimarykey = resultSet.getInt("_PK_PLAYER");			     
 			        	break;
 			        }
 			 }
@@ -134,7 +134,7 @@ public class Game {
 			//Creating a variable for the connection called "connect"
 			//connect to the database
 			connect = dbConnection();
-		    statement = connect.prepareStatement("DELETE FROM player WHERE APP_USERS_PK = " + pk);
+		    statement = connect.prepareStatement("DELETE FROM player WHERE _PK_PLAYER = " + pk);
 			statement.executeUpdate();
 			//Disconnect from the database
 			connect.close();
@@ -166,30 +166,30 @@ public class Game {
 			 connect = dbConnection();
 			 			 			 
 			 //Go ahead and add them to the candidate list now, that function will sort who is worthy of president there
-			 statement = connect.prepareStatement("INSERT INTO candidates (FK_PLAYER, FK_GAME) VALUES (?,?);");	
+			 statement = connect.prepareStatement("INSERT INTO candidates (_FK_PLAYER, _FK_GAME) VALUES (?,?);");	
 			 statement.setInt(1, dbpk);	
 			 statement.setInt(2, game);	
 			 statement.executeUpdate();
 			 
 			 //Set player_to_game to reflect this new game for this player
-			 statement = connect.prepareStatement("INSERT INTO player_to_game (FK_PLAYER, FK_GAME, WHEN_JOINED) VALUES (?,?,?);");
+			 statement = connect.prepareStatement("INSERT INTO player_to_game (_FK_PLAYER, _FK_GAME, WHEN_JOINED) VALUES (?,?,?);");
 			 statement.setInt(1, dbpk);
 			 statement.setInt(2, game);
 			 statement.setString(3, null);//Send a null value to trigger an update to joined timestamp			      					  	        					 	        					
 			 statement.executeUpdate();	
 			 
 			 //Retrieve the player_to_game PK for this user to add to the player_role and voting_history tables
-			 resultSet = statement.executeQuery("SELECT P2G.PK FROM player_to_game P2G WHERE (P2G.FK_PLAYER = " + dbpk + ");");
+			 resultSet = statement.executeQuery("SELECT P2G._PK_P2G FROM player_to_game P2G WHERE (P2G._FK_PLAYER = " + dbpk + ");");
 			 resultSet.next();//ADvance the resultSet cursor
-			 PK_P2G = resultSet.getInt("P2G.PK");   		
+			 PK_P2G = resultSet.getInt("P2G._PK_P2G");   		
 			 
 			 //Set voting_history for this player for this game
-			 statement = connect.prepareStatement("INSERT INTO voting_history (FK_P2G) VALUES (?);");	
+			 statement = connect.prepareStatement("INSERT INTO voting_history (_FK_P2G) VALUES (?);");	
 			 statement.setInt(1, PK_P2G);	
 			 statement.executeUpdate();
 			 
 			 //Set default player_role for this player for this game
-			 statement = connect.prepareStatement("INSERT INTO player_role (FK_P2G) VALUES (?);");	
+			 statement = connect.prepareStatement("INSERT INTO player_role (_FK_P2G) VALUES (?);");	
 			 statement.setInt(1, PK_P2G);		
 			 statement.executeUpdate();
 			 
@@ -220,7 +220,7 @@ public class Game {
 			connect = dbConnection();//Connect to db
 			
 			//Start the game that this player is currently in
-			statement = connect.prepareStatement("UPDATE game G SET G.STARTED = (?) WHERE G.PK_GAME_NUMBER = " + playerGame + ";");
+			statement = connect.prepareStatement("UPDATE game G SET G.STARTED = (?) WHERE G._PK_GAME = " + playerGame + ";");
 			statement.setString(1, null);//Send a null value to trigger an update (effectively starts the game)
 			statement.executeUpdate();						
 			
@@ -250,7 +250,7 @@ public class Game {
 				 //Add user's response to the Yea column
 				 if (ans.equals("Yea"))    			  
 				 {		        					       					 
-					 stmnt = connect.prepareStatement("UPDATE candidates C SET C.YEA = (?) WHERE C.FK_PLAYER = " + pk + ";");
+					 stmnt = connect.prepareStatement("UPDATE candidates C SET C.YEA = (?) WHERE C._FK_PLAYER = " + pk + ";");
 					 stmnt.setInt(1, 1);	        					  	        					 	        					
 					 stmnt.executeUpdate();
 					  
@@ -259,7 +259,7 @@ public class Game {
 				     //Add user's response to the Nay column
 				     else if (ans.equals("Nay"))
 				     {
-					     stmnt = connect.prepareStatement("UPDATE candidates C SET C.NAY = (?) WHERE C.FK_PLAYER = " + pk + ";");
+					     stmnt = connect.prepareStatement("UPDATE candidates C SET C.NAY = (?) WHERE C._FK_PLAYER = " + pk + ";");
 					     stmnt.setInt(1, 1);
 					     stmnt.executeUpdate();				  
 					     break;
@@ -282,7 +282,7 @@ public class Game {
 		int candidateCounter = 0;//Users who've accepted nomination
 		int userCounter = 0;//To count user in this game in total	
 		int FK_CANDIDATE = 0;//This will set the FK for election table referencing candidates PK
-		int FK_GAME = 0;
+		int _FK_GAME = 0;
 		String dbUsername = null;//Used to store each user name from candidates list
 		Connection connect = null;
 		Statement statement;
@@ -297,7 +297,7 @@ public class Game {
 		       statement = (Statement) connect.createStatement();
 		     
 		       //Count the number of candidates in this game
-		       resultSet = statement.executeQuery("SELECT COUNT(C.YEA) FROM candidates C, game G WHERE (C.FK_GAME = G.PK_GAME_NUMBER) AND (YEA = 1) AND (G.PK_GAME_NUMBER = " + playerGame +");");
+		       resultSet = statement.executeQuery("SELECT COUNT(C.YEA) FROM candidates C, game G WHERE (C._FK_GAME = G._PK_GAME) AND (YEA = 1) AND (G._PK_GAME = " + playerGame +");");
 		       resultSet.next();
 		       candidateCounter = resultSet.getInt(1);
 		     		    		       
@@ -305,7 +305,7 @@ public class Game {
 		       if(candidateCounter >= 10)
 		       {
 		    	   //Check if the election table has already been populated
-			       resultSet = statement.executeQuery("SELECT COUNT(E.CANDIDATE) FROM election E, game G WHERE (E.FK_GAME = G.PK_GAME_NUMBER) AND (G.PK_GAME_NUMBER = " + playerGame +");");
+			       resultSet = statement.executeQuery("SELECT COUNT(E.CANDIDATE) FROM election E, game G WHERE (E._FK_GAME = G._PK_GAME) AND (G._PK_GAME = " + playerGame +");");
 			       resultSet.next();
 			       userCounter = resultSet.getInt(1);
 		    	   
@@ -316,31 +316,31 @@ public class Game {
 			    	    //Delete the old election and setup a new one, users may have dropped out or this is a new game
 			    	    if (userCounter > 0)
 			    	    {
-			    	    	resultSet = statement.executeQuery("SELECT * FROM election E, game G WHERE (E.FK_GAME = G.PK_GAME_NUMBER) AND (G.PK_GAME_NUMBER = " + playerGame +");");
+			    	    	resultSet = statement.executeQuery("SELECT * FROM election E, game G WHERE (E._FK_GAME = G._PK_GAME) AND (G._PK_GAME = " + playerGame +");");
 			    	    	
 			    	    	while(resultSet.next())
 			    	    	{
-			    	    		stmnt = connect.prepareStatement("DELETE FROM election USING game, election WHERE (election.FK_GAME = game.PK_GAME_NUMBER);");
+			    	    		stmnt = connect.prepareStatement("DELETE FROM election USING game, election WHERE (election._FK_GAME = game._PK_GAME);");
 			    	    		stmnt.executeUpdate();
 			    	    	}
 			    	    }
 			    	   
 			    	    System.out.println("Setting up election line 471"); 
-			    	    resultSet = statement.executeQuery("SELECT P.USERNAME, P.REPUTATION_POINTS, C.PK, C.FK_GAME " +
-				     		"FROM player P, candidates C, player_to_game P2G, game G WHERE (P.APP_USERS_PK = C.FK_PLAYER) AND (C.YEA = 1) " +
-				     		"AND (C.FK_GAME = G.PK_GAME_NUMBER) AND (P.APP_USERS_PK = P2G.FK_PLAYER) AND (P2G.FK_GAME = G.PK_GAME_NUMBER) AND (G.PK_GAME_NUMBER = " + playerGame +")" +
-				     		" ORDER BY P.REPUTATION_POINTS, P.APP_USERS_PK;");
+			    	    resultSet = statement.executeQuery("SELECT P.USERNAME, P.REPUTATION_POINTS, C._PK_CANDIDATES, C._FK_GAME " +
+				     		"FROM player P, candidates C, player_to_game P2G, game G WHERE (P._PK_PLAYER = C._FK_PLAYER) AND (C.YEA = 1) " +
+				     		"AND (C._FK_GAME = G._PK_GAME) AND (P._PK_PLAYER = P2G._FK_PLAYER) AND (P2G._FK_GAME = G._PK_GAME) AND (G._PK_GAME = " + playerGame +")" +
+				     		" ORDER BY P.REPUTATION_POINTS, P._PK_PLAYER;");
 			    	    System.out.println("Setting up election line 647"); 			    	   	    	   
 						while (resultSet.next()) 
 						{      					    						   										
 							//retrieve data				    				    						    						      						
 							dbUsername = resultSet.getString("P.USERNAME");  				
-						    FK_CANDIDATE = resultSet.getInt("C.PK");
-						    FK_GAME = resultSet.getInt("C.FK_GAME");
-						    stmnt = connect.prepareStatement("INSERT INTO election(CANDIDATE, FK_CANDIDATES, FK_GAME) VALUES (?,?,?)");
+						    FK_CANDIDATE = resultSet.getInt("C._PK_CANDIDATES");
+						    _FK_GAME = resultSet.getInt("C._FK_GAME");
+						    stmnt = connect.prepareStatement("INSERT INTO election(CANDIDATE, _FK_CANDIDATES, _FK_GAME) VALUES (?,?,?)");
 						    stmnt.setString(1, dbUsername);							
 							stmnt.setInt(2, FK_CANDIDATE);
-							stmnt.setInt(3, FK_GAME);
+							stmnt.setInt(3, _FK_GAME);
 							stmnt.executeUpdate();
 						}						
 			       }			   	   			    
@@ -376,12 +376,12 @@ public class Game {
 			//Connect to the DB
 			connect = dbConnection();
 			//NOTE that to send a string for comparison you must encapsulate the string in quotes like: '" + value + "'
-			statement = connect.prepareStatement("UPDATE election E, game G SET E.YEA = E.YEA + (?) WHERE (E.CANDIDATE = '" + vote + "') AND (E.FK_GAME = G.PK_GAME_NUMBER) AND (G.PK_GAME_NUMBER = " + playerGame +");");
+			statement = connect.prepareStatement("UPDATE election E, game G SET E.YEA = E.YEA + (?) WHERE (E.CANDIDATE = '" + vote + "') AND (E._FK_GAME = G._PK_GAME) AND (G._PK_GAME = " + playerGame +");");
 			statement.setInt(1, 1);
 			statement.executeUpdate();
 			
 			//Update voting history table
-			statement = connect.prepareStatement("UPDATE voting_history V, player_to_game P2G SET V.ELECTION = 1 WHERE (V.FK_P2G = P2G.PK) AND (P2G.FK_PLAYER = " + pk + ") AND (P2G.FK_GAME = " + playerGame + ");");		
+			statement = connect.prepareStatement("UPDATE voting_history V, player_to_game P2G SET V.ELECTION = 1 WHERE (V._FK_P2G = P2G._PK_P2G) AND (P2G._FK_PLAYER = " + pk + ") AND (P2G._FK_GAME = " + playerGame + ");");		
 			statement.executeUpdate();
 			
 			//Disconnect from the database
@@ -412,7 +412,7 @@ public class Game {
 
 			statement = (Statement) connect.createStatement();		     
 	        //Count the number of candidates in this game
-	        resultSet = statement.executeQuery("SELECT FK_GAME FROM player_to_game WHERE FK_GAME = " + playerGame + ";");
+	        resultSet = statement.executeQuery("SELECT _FK_GAME FROM player_to_game WHERE _FK_GAME = " + playerGame + ";");
 	        
 	        while (resultSet.next())
 	        {
@@ -454,17 +454,17 @@ public class Game {
 		     statement = (Statement) connect.createStatement();
 		     
 		     //Return the player_to_game table with associated players
-		     resultSet = statement.executeQuery("SELECT P.APP_USERS_PK, P2G.FK_PLAYER, P2G.FK_GAME FROM player P, player_to_game P2G " +
-		     		                               "WHERE P.APP_USERS_PK = P2G.FK_PLAYER;");
+		     resultSet = statement.executeQuery("SELECT P._PK_PLAYER, P2G._FK_PLAYER, P2G._FK_GAME FROM player P, player_to_game P2G " +
+		     		                               "WHERE P._PK_PLAYER = P2G._FK_PLAYER;");
 		     
 		     //retrieve games for this player	
 		     while (resultSet.next()) 
 			 {      				    		       			        			    	 
 		    	    //User found database
-			        if (pk == resultSet.getInt("APP_USERS_PK")) 
+			        if (pk == resultSet.getInt("_PK_PLAYER")) 
 			        {			        			    				    
 			        	//This player is already in a valid game
-			        	if (resultSet.getInt("FK_GAME") > 0)
+			        	if (resultSet.getInt("_FK_GAME") > 0)
 	        			{
 			        		//Disconnect from the database
 		       		        connect.close();
@@ -516,7 +516,7 @@ public class Game {
 		{
 			connect = dbConnection();//Connect to db
 			statement = (Statement) connect.createStatement();//Create the statement		
-			resultSet = statement.executeQuery("SELECT G.STARTED FROM game G WHERE G.PK_GAME_NUMBER = " + playerGame + ";");
+			resultSet = statement.executeQuery("SELECT G.STARTED FROM game G WHERE G._PK_GAME = " + playerGame + ";");
 			
 			//Advance the resultSet, if true retrieve the date, otherwise it will be false on program start returning empty set
 			//  This if statement should block that from happening
@@ -578,15 +578,15 @@ public class Game {
 		     //Count the number of candidates in this game
 		     //resultSet = statement.executeQuery("SELECT COUNT(YEA) FROM candidates WHERE YEA = 1;");
 		     resultSet = statement.executeQuery("SELECT COUNT(C.YEA) FROM candidates C, " 
-		    		                             + "game G WHERE (C.YEA = 1) AND (C.FK_GAME = G.PK_GAME_NUMBER) AND (G.PK_GAME_NUMBER = " + playerGame +");");
+		    		                             + "game G WHERE (C.YEA = 1) AND (C._FK_GAME = G._PK_GAME) AND (G._PK_GAME = " + playerGame +");");
 		     		    
 		     resultSet.next();
 		     candidateCounter = resultSet.getInt(1);
 		     
 		     //Count the number of users in this game who have answered yea or nay
 		     //resultSet = statement.executeQuery("SELECT COUNT(PK), FROM candidates WHERE YEA = 1 OR NAY = 1;");
-		     resultSet = statement.executeQuery("SELECT COUNT(C.PK) FROM candidates C, " +
-                      "game G WHERE (C.FK_GAME = G.PK_GAME_NUMBER) AND (C.YEA = 1 OR NAY = 1) AND (G.PK_GAME_NUMBER = " + playerGame +");");
+		     resultSet = statement.executeQuery("SELECT COUNT(C._PK_CANDIDATES) FROM candidates C, " +
+                      "game G WHERE (C._FK_GAME = G._PK_GAME) AND (C.YEA = 1 OR NAY = 1) AND (G._PK_GAME = " + playerGame +");");
 
 		     resultSet.next();
 		     answeredCounter = resultSet.getInt(1);
@@ -595,7 +595,7 @@ public class Game {
 		     //resultSet = statement.executeQuery("SELECT COUNT(p.USERNAME) FROM player p;");
 		     //Count the number of users in this games player database
 		     resultSet = statement.executeQuery("SELECT COUNT(P.USERNAME) FROM player P, player_to_game P2G, game G WHERE" +
-		     		                             " (P.APP_USERS_PK = P2G.FK_PLAYER) AND (P2G.FK_GAME = G.PK_GAME_NUMBER) AND (G.PK_GAME_NUMBER = " + playerGame +");");
+		     		                             " (P._PK_PLAYER = P2G._FK_PLAYER) AND (P2G._FK_GAME = G._PK_GAME) AND (G._PK_GAME = " + playerGame +");");
 		     resultSet.next();
 		     userCounter = resultSet.getInt(1);
 		     
@@ -608,15 +608,15 @@ public class Game {
 		     {
 		    	 System.out.println("ENTERING line 497\n");
 		    	 //Return the top ten users by rep points and FIFO join time from the same game
-			     resultSet = statement.executeQuery("SELECT P.APP_USERS_PK, P.REPUTATION_POINTS, C.YEA, C.NAY " +
-			     		"FROM player P, candidates C, game G WHERE (P.APP_USERS_PK = C.FK_PLAYER) AND (C.YEA = 0 AND C.NAY = 0) AND (C.FK_GAME = G.PK_GAME_NUMBER) AND (G.PK_GAME_NUMBER = " + playerGame +") "  +
-			     		"ORDER BY P.REPUTATION_POINTS, P.APP_USERS_PK LIMIT 10;");
+			     resultSet = statement.executeQuery("SELECT P._PK_PLAYER, P.REPUTATION_POINTS, C.YEA, C.NAY " +
+			     		"FROM player P, candidates C, game G WHERE (P._PK_PLAYER = C._FK_PLAYER) AND (C.YEA = 0 AND C.NAY = 0) AND (C._FK_GAME = G._PK_GAME) AND (G._PK_GAME = " + playerGame +") "  +
+			     		"ORDER BY P.REPUTATION_POINTS, P._PK_PLAYER LIMIT 10;");
 			     
 			     //retrieve rp's FOR THIS USER	
 			     while (resultSet.next()) 
 				 {      				    		       			        			    	 
 			    	    //User found in top ten!
-				        if (pk == resultSet.getInt("APP_USERS_PK")) 
+				        if (pk == resultSet.getInt("_PK_PLAYER")) 
 				        {			        			    				    
 				        	//This user was found in the top ten
 				        	RP = resultSet.getInt("REPUTATION_POINTS");						       
@@ -628,11 +628,11 @@ public class Game {
 			     //If RP is still 0 then this user wasn't found in the top ten qualified candidates and this code will be skipped
 			     if (RP > 0)
 			     {	    	 
-			    	  resultSet = statement.executeQuery("select * from candidates C, game G WHERE (C.FK_GAME = G.PK_GAME_NUMBER) AND (G.PK_GAME_NUMBER = " + playerGame + ");");			          
+			    	  resultSet = statement.executeQuery("select * from candidates C, game G WHERE (C._FK_GAME = G._PK_GAME) AND (G._PK_GAME = " + playerGame + ");");			          
 			    	  //Check to see if this user has already decided to accept or decline nomination
 			          while (resultSet.next())
 			          {			        	  			        	 
-			        	  if (pk == resultSet.getInt("FK_PLAYER"))
+			        	  if (pk == resultSet.getInt("_FK_PLAYER"))
 			        	  {
 			        		  if (resultSet.getInt("Yea") == 1 || resultSet.getInt("Nay") == 1)
 			        		  {
@@ -726,7 +726,7 @@ public class Game {
 		     statement = (Statement) connect.createStatement();
 		     //Pull this player from voting_history
 		     resultSet = statement.executeQuery("SELECT ELECTION FROM voting_history V, player_to_game P2G " 
-                     + "WHERE (V.FK_P2G = P2G.PK) AND (P2G.FK_PLAYER = " + pk + ") AND (P2G.FK_GAME = " + playerGame + ");");
+                     + "WHERE (V._FK_P2G = P2G._PK_P2G) AND (P2G._FK_PLAYER = " + pk + ") AND (P2G._FK_GAME = " + playerGame + ");");
 
 		     //Pull resultSet data
 		     resultSet.next();
@@ -769,7 +769,7 @@ public class Game {
 		     statement = (Statement) connect.createStatement();
 			 //Do a sort on voting_history for this game, check the election column--if any values == 0 then election not completed
 		     resultSet = statement.executeQuery("SELECT ELECTION FROM voting_history V, player_to_game P2G " 
-                     + "WHERE (V.FK_P2G = P2G.PK) AND (P2G.FK_GAME = " + playerGame + ");");
+                     + "WHERE (V._FK_P2G = P2G._PK_P2G) AND (P2G._FK_GAME = " + playerGame + ");");
 
 		     //Cycle through resultSet data
 		     while(resultSet.next())
@@ -823,13 +823,13 @@ public class Game {
 		     statement = (Statement) connect.createStatement();
 		     
 		     //Return all games from game list that have not started
-		     resultSet = statement.executeQuery("SELECT G.PK_GAME_NUMBER from game G WHERE G.STARTED = 0;");
+		     resultSet = statement.executeQuery("SELECT G._PK_GAME from game G WHERE G.STARTED = 0;");
 		     
 		     //retrieve game ID's
 		     while (resultSet.next()) 
 			 {      				    		       			        			    	 
 		    	 //Add available games to vector
-		    	 games.addElement(new Integer(resultSet.getInt("PK_GAME_NUMBER")));    
+		    	 games.addElement(new Integer(resultSet.getInt("_PK_GAME")));    
 			 }
 		     
 		     //Disconnect from the database and close statements (might be possible to hack the statements if they stay open)
@@ -865,20 +865,20 @@ public class Game {
 		     statement = (Statement) connect.createStatement();
 		     
 		     //Return player_to_game_list
-		     resultSet = statement.executeQuery("SELECT P.APP_USERS_PK, P2G.FK_PLAYER, P2G.FK_GAME FROM player P, player_to_game P2G " +
-		     		                               "WHERE P.APP_USERS_PK = P2G.FK_PLAYER;");
+		     resultSet = statement.executeQuery("SELECT P._PK_PLAYER, P2G._FK_PLAYER, P2G._FK_GAME FROM player P, player_to_game P2G " +
+		     		                               "WHERE P._PK_PLAYER = P2G._FK_PLAYER;");
 		     
 		     //retrieve game ID's
 		     while (resultSet.next()) 
 			 {      				    		       			        			    	 
 		    	    //User found database
-			        if (pk == resultSet.getInt("APP_USERS_PK")) 
+			        if (pk == resultSet.getInt("_PK_PLAYER")) 
 			        {			        			    				    
 			        	//This player is already in a valid game
-			        	if (resultSet.getInt("FK_GAME") > 0)//0 is default non-game value
+			        	if (resultSet.getInt("_FK_GAME") > 0)//0 is default non-game value
 	        			{
 			        		//Set this gameID to the vector 
-			        		games.addElement(new Integer(resultSet.getInt("FK_GAME")));
+			        		games.addElement(new Integer(resultSet.getInt("_FK_GAME")));
 			        		//step the vector
 	        			}			        				        	
 			        }
@@ -913,8 +913,8 @@ public class Game {
 
 			//collect the candidates
 			statement = connect.prepareStatement("select P.REPUTATION_POINTS " + 
-			                                  "FROM player P, candidates C, player_to_game P2G, game G WHERE (C.FK_PLAYER = P.APP_USERS_PK)" +
-					                          " AND (P2G.FK_PLAYER = P.APP_USERS_PK) AND (P2G.FK_GAME = G.PK_GAME_NUMBER) AND (G.PK_GAME_NUMBER = " + playerGame +");");
+			                                  "FROM player P, candidates C, player_to_game P2G, game G WHERE (C._FK_PLAYER = P._PK_PLAYER)" +
+					                          " AND (P2G._FK_PLAYER = P._PK_PLAYER) AND (P2G._FK_GAME = G._PK_GAME) AND (G._PK_GAME = " + playerGame +");");
 			//Creating a variable to execute query
 			result = statement.executeQuery();
 			//populate the class member candidateList
@@ -955,8 +955,8 @@ public class Game {
 			//collect the candidates
 			statement = connect.prepareStatement("select E.CANDIDATE " + 
 			                                  "FROM election E, player P, candidates C, player_to_game P2G, game G " + 
-					                          "WHERE (E.FK_CANDIDATES = C.PK) AND (C.FK_PLAYER = P.APP_USERS_PK) " +
-					                          "AND (P2G.FK_PLAYER = P.APP_USERS_PK) AND (P2G.FK_GAME = G.PK_GAME_NUMBER) AND (G.PK_GAME_NUMBER = " + playerGame +");");							
+					                          "WHERE (E._FK_CANDIDATES = C._PK_CANDIDATES) AND (C._FK_PLAYER = P._PK_PLAYER) " +
+					                          "AND (P2G._FK_PLAYER = P._PK_PLAYER) AND (P2G._FK_GAME = G._PK_GAME) AND (G._PK_GAME = " + playerGame +");");							
 
 			//Creating a variable to execute query
 			result = statement.executeQuery();
@@ -1000,7 +1000,7 @@ public class Game {
 			connect = dbConnection();
 			
 			//collect the candidates
-			statement = connect.prepareStatement("select E.CANDIDATE, E.YEA from election E, game G WHERE (E.FK_GAME = G.PK_GAME_NUMBER) AND (G.PK_GAME_NUMBER = " + playerGame +") ORDER BY E.YEA DESC;");
+			statement = connect.prepareStatement("select E.CANDIDATE, E.YEA from election E, game G WHERE (E._FK_GAME = G._PK_GAME) AND (G._PK_GAME = " + playerGame +") ORDER BY E.YEA DESC;");
 			result = statement.executeQuery();
 			
 			//populate the class member candidateList
@@ -1043,23 +1043,23 @@ public class Game {
 			connect = dbConnection();
 						
 			//First set president for this game
-			statement = connect.prepareStatement("SELECT P2G.PK, E.YEA, E.CANDIDATE from election E, player_to_game P2G, candidates C, player P WHERE " + 
-					                               "(E.FK_CANDIDATES = C.PK) AND (C.FK_PLAYER= P.APP_USERS_PK) AND (P2G.FK_PLAYER = P.APP_USERS_PK) AND (E.FK_GAME = " + playerGame +") " +
-					                                  "AND (C.FK_GAME = " + playerGame + ") AND (P2G.FK_GAME = " + playerGame + ") ORDER BY E.YEA DESC LIMIT 1;");
+			statement = connect.prepareStatement("SELECT P2G._PK_P2G, E.YEA, E.CANDIDATE from election E, player_to_game P2G, candidates C, player P WHERE " + 
+					                               "(E._FK_CANDIDATES = C._PK_CANDIDATES) AND (C._FK_PLAYER= P._PK_PLAYER) AND (P2G._FK_PLAYER = P._PK_PLAYER) AND (E._FK_GAME = " + playerGame +") " +
+					                                  "AND (C._FK_GAME = " + playerGame + ") AND (P2G._FK_GAME = " + playerGame + ") ORDER BY E.YEA DESC LIMIT 1;");
 			result = statement.executeQuery();//Capture result set
 			result.next();//Bring up data into cursor
-			P2G_PK = result.getInt("P2G.PK");//Store the primary key for later
+			P2G_PK = result.getInt("P2G._PK_P2G");//Store the primary key for later
             //Set this player to be president
-			statement = connect.prepareStatement("UPDATE player_role PR SET PR.PRESIDENT = 1 WHERE PR.FK_P2G = " + result.getInt("P2G.PK") + ";");
+			statement = connect.prepareStatement("UPDATE player_role PR SET PR.PRESIDENT = 1 WHERE PR._FK_P2G = " + result.getInt("P2G._PK_P2G") + ";");
 			statement.executeUpdate();
 			
 			//Next set all other players in this game to be senators, exclude the current president
-			statement = connect.prepareStatement("SELECT P2G.PK from player_to_game P2G WHERE (P2G.FK_GAME = " + playerGame + ") AND (P2G.PK != " + P2G_PK  + ");");
+			statement = connect.prepareStatement("SELECT P2G._PK_P2G from player_to_game P2G WHERE (P2G._FK_GAME = " + playerGame + ") AND (P2G._PK_P2G != " + P2G_PK  + ");");
 			result = statement.executeQuery();//Capture result set
 			//Set all senators
 			while (result.next()) 
 			{
-				statement = connect.prepareStatement("UPDATE player_role PR SET PR.SENATOR = 1 WHERE PR.FK_P2G = " + result.getInt("P2G.PK") + ";");
+				statement = connect.prepareStatement("UPDATE player_role PR SET PR.SENATOR = 1 WHERE PR._FK_P2G = " + result.getInt("P2G._PK_P2G") + ";");
 				statement.executeUpdate();
 			}
 						
