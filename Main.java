@@ -39,6 +39,7 @@ public class Main {
     private JPanel GamesDisplay;
   	private JPanel JoinGame;
   	private JPanel StartGame;
+  	private JPanel Winner;
     private JButton btnSignIn;
     //hold candidate information   
   	private	String candidate = null;
@@ -49,6 +50,7 @@ public class Main {
   	private boolean loggedIn;
   	private boolean gameContinued;
   	private int playerGame;//stores the game number player has continued/ joined
+  	private JTextField textField;
   	
 	/**
 	 * Launch the application.
@@ -123,7 +125,7 @@ public class Main {
 	    //Create a join game button to allow users to join a game
 	    final JButton btnJoinGame = new JButton("Join Game");
 	    	    
-	    btnJoinGame.setBounds(156, 187, 107, 23);
+	    btnJoinGame.setBounds(91, 215, 107, 23);
 	    StartMenu.add(btnJoinGame);	   
 	    if (getPrimaryKey() == 0)
 	    {	    	
@@ -132,37 +134,59 @@ public class Main {
 	    
 	    btnJoinGame.addActionListener(new ActionListener() {
 	    	public void actionPerformed(ActionEvent arg0) {
-	    		boolean gameCheck = false;
 	    		//System.out.println("entering 128\n");
 	    		//Add user to game
 	    		StartMenu.setVisible(false);
 	    		JoinGame.setVisible(true);
 	    	}
 	    });
-	   
 	    
-	    //Add a start game option
-	    JButton btnStartGame = new JButton("Start Game");
-	    btnStartGame.setBounds(156, 221, 107, 23);
-	    StartMenu.add(btnStartGame);
-	    //If not logged in set to false, if not in a game set to false
-	    if ((getPrimaryKey() == 0) || (Game.inGameCheck(getPrimaryKey()) == false))
+	    //Create game button
+	    final JLabel label = DefaultComponentFactory.getInstance().createLabel("");
+	    label.setBounds(226, 237, 134, 14);
+	    StartMenu.add(label);
+	    
+	    final JButton btnCreateGame = new JButton("Create Game");
+	    btnCreateGame.setBounds(232, 215, 117, 23);
+	    StartMenu.add(btnCreateGame);
+	    	    	    	   	    
+	    if (getPrimaryKey() == 0)
 	    {	    	
-	    	 btnStartGame.setEnabled(false);
+	    	 btnCreateGame.setEnabled(false);
 	    }
-	    //*****Eventually this will have to check that the specific game they're in evals to true, not that they're just in any game
-	    if ((getPrimaryKey() != 0) && (Game.inGameCheck(getPrimaryKey()) == false) && (Game.inGameCount(getPlayerGame()) >= 10))
-	    {	    	
-	    	 btnStartGame.setEnabled(true);
-	    }
-	    //If start game selected follow this pattern
-	    btnStartGame.addActionListener(new ActionListener() {
+	    //Create game listener
+	    btnCreateGame.addActionListener(new ActionListener() {
 	    	public void actionPerformed(ActionEvent arg0) {
-	    		
-	    		
+	    		label.setText("Game Created!");
+	    		Game.createGame();//create new game               
 	    	}
 	    });
 	    
+	    //Continue Game button
+	    final JButton btnContinueGame = new JButton("Continue Game");
+	    btnContinueGame.setBounds(151, 181, 125, 23);
+	    StartMenu.add(btnContinueGame);
+	    
+	    if ((getPrimaryKey() == 0) || (Game.inGameCheck(getPrimaryKey()) == false))
+	    {	    	
+	    	btnContinueGame.setEnabled(false);
+	    }
+
+	    //Create game listener
+	    btnContinueGame.addActionListener(new ActionListener() {
+	    	public void actionPerformed(ActionEvent arg0) {
+                //Take this player to their gamesDisplay page  
+	    		//Update game display panel
+				GamesDisplay.removeAll();								
+				GamesDisplay.validate();
+				GamesDisplay.repaint();
+				
+				//Run the candidate check
+				retrieveGames();
+				StartMenu.setVisible(false);
+				GamesDisplay.setVisible(true);	
+	    	}
+	    });
 	  //********************************************************End of Start Menu Methods*******************************************************************
 	    
 	  //********************************************************Begin New User Methods*******************************************************************
@@ -239,7 +263,7 @@ public class Main {
 				if (pass.equals(passCheck) == false || pass.equals("password"))
 				{										
 					lblPasswordsDoNot.setText("Passwords do not match!");
-					if (pass.equals("password"))
+					if ((pass.equals("password") || (pass.equals("Password"))))
 					{
 						lblPasswordsDoNot.setText("Please don't use the password 'password'");
 					}
@@ -274,6 +298,7 @@ public class Main {
 							if (getPrimaryKey() > 0)
 						    {					    	
 						    	btnJoinGame.setEnabled(true);
+						    	btnCreateGame.setEnabled(true);
 						    	btnLogin.setEnabled(false);
 						    	btnNewUser.setEnabled(false);
 						    }
@@ -370,15 +395,15 @@ public class Main {
 					
 					if (gameCheck == true)
 					{
-						//Update game display panel
-						GamesDisplay.removeAll();								
-						GamesDisplay.validate();
-						GamesDisplay.repaint();
+						btnContinueGame.setEnabled(true);
+						btnCreateGame.setEnabled(true);
+						btnJoinGame.setEnabled(true);
+				    	btnLogin.setEnabled(false);
+				    	btnNewUser.setEnabled(false);						
 						
-						//Run the candidate check
-						retrieveGames();
+						//Return to main menu giving player more options
 						Login.setVisible(false);
-						GamesDisplay.setVisible(true);						
+						StartMenu.setVisible(true);						
 					}
 				}
 			}
@@ -489,10 +514,19 @@ public class Main {
 		StartGame = new JPanel();
 		frame.getContentPane().add(StartGame, "name_233910827980441");
 		StartGame.setLayout(null);
-		
+			
 		//Function to show start game button and number of players in game
 		startGame();										
 		//********************************************************End of Start Game Panel********************************************************
+		//********************************************************Start of Winner Panel********************************************************
+		Winner = new JPanel();
+		frame.getContentPane().add(Winner, "name_1813719939759981");
+		Winner.setLayout(null);
+						
+		//Update panel
+		winner();
+		
+		//********************************************************End of Winner Panel********************************************************
 	}	
 	
 	//Begin Function Methods:
@@ -590,177 +624,215 @@ public class Main {
 		final int []candidatesRP =  Game.getCandidatesRP(getPlayerGame());
 		//Create an array that contains the candidate usernames for this game
 		final String []candidateUN = Game.getCandidates(getPlayerGame());
-
-		//Check to see if this player has already voted
-		if (Game.electionVoteCheck(getPrimaryKey(), getPlayerGame()) == false)
-		{					
-			candidate = candidateUN[0] + " RP: ";
-			final JRadioButton candidate0 = new JRadioButton(candidate + candidatesRP[0]);
-			candidate0.setBounds(26, 82, 124, 23);
-			Election.add(candidate0);								
-			
-			System.out.println("candidate: " + candidate + "\n");
-			
-			candidate = candidateUN[1] + " RP: ";
-			final JRadioButton candidate1 = new JRadioButton(candidate + candidatesRP[1]);
-			candidate1.setBounds(26, 108, 124, 23);
-			Election.add(candidate1);				
-			
-			System.out.println("candidate: " + candidate + "\n");
-			
-			candidate = candidateUN[2] + " RP: ";
-			final JRadioButton candidate2 = new JRadioButton(candidate + candidatesRP[2]);
-			candidate2.setBounds(26, 134, 124, 23);
-			Election.add(candidate2);
-			
-			System.out.println("candidate: " + candidate + "\n");
-			
-			candidate = candidateUN[3] + " RP: ";
-			final JRadioButton candidate3 = new JRadioButton(candidate + candidatesRP[3]);
-			candidate3.setBounds(26, 160, 124, 23);
-			Election.add(candidate3);					
-			
-			candidate = candidateUN[4] + " RP: ";
-			final JRadioButton candidate4 = new JRadioButton(candidate + candidatesRP[4]);
-			candidate4.setBounds(152, 82, 130, 23);
-			Election.add(candidate4);
-			
-			candidate = candidateUN[5] + " RP: ";
-			final JRadioButton candidate5 = new JRadioButton(candidate + candidatesRP[5]);
-			candidate5.setBounds(152, 108, 130, 23);
-			Election.add(candidate5);					
+        
+		//First check to see if this election has completed
+		if (Game.electionFinishedCheck(getPlayerGame()) == false)
+		{
+			//Check to see if this player has already voted
+			if (Game.electionVoteCheck(getPrimaryKey(), getPlayerGame()) == false)
+			{					
+				candidate = candidateUN[0] + " RP: ";
+				final JRadioButton candidate0 = new JRadioButton(candidate + candidatesRP[0]);
+				candidate0.setBounds(26, 82, 124, 23);
+				Election.add(candidate0);								
 				
-			candidate = candidateUN[6] + " RP: ";
-			final JRadioButton candidate6 = new JRadioButton(candidate + candidatesRP[6]);
-			candidate6.setBounds(152, 134, 130, 23);
-			Election.add(candidate6);					
-			
-			candidate = candidateUN[7] + " RP: ";
-			final JRadioButton candidate7 = new JRadioButton(candidate + candidatesRP[7]);
-			candidate7.setBounds(152, 160, 130, 23);
-			Election.add(candidate7);					
-			
-			candidate = candidateUN[8] + " RP: ";
-			final JRadioButton candidate8 = new JRadioButton(candidate + candidatesRP[8]);
-			candidate8.setBounds(294, 82, 130, 23);
-			Election.add(candidate8);				
-			
-			candidate = candidateUN[9] + " RP: ";
-			final JRadioButton candidate9 = new JRadioButton(candidate + candidatesRP[9]);
-			candidate9.setBounds(294, 108, 130, 23);
-			Election.add(candidate9);	
-			
-			//Group all the radio buttons so we can retrieve data from them
-			ButtonGroup group = new ButtonGroup();
-			group.add(candidate0);
-			group.add(candidate1);
-		    group.add(candidate2);
-		    group.add(candidate3);
-		    group.add(candidate4);
-		    group.add(candidate5);
-		    group.add(candidate6);
-		    group.add(candidate7);
-		    group.add(candidate8);
-		    group.add(candidate9);
-		    
-		    JButton Electbtn = new JButton("Vote!");
-			Electbtn.setBounds(172, 213, 89, 23);
-			Election.add(Electbtn);
-			Electbtn.addMouseListener(new MouseAdapter() {
-				@Override
-				public void mouseClicked(MouseEvent arg0) {					
+				System.out.println("candidate: " + candidate + "\n");
 				
-					//Capture this user's vote selection and submit it to the database
-				    if (candidate0.isSelected())
-					{
-						vote = candidateUN[0];	
-					}				    
-				    
-				    if (candidate1.isSelected())
-					{
-						vote = candidateUN[1];	
+				candidate = candidateUN[1] + " RP: ";
+				final JRadioButton candidate1 = new JRadioButton(candidate + candidatesRP[1]);
+				candidate1.setBounds(26, 108, 124, 23);
+				Election.add(candidate1);				
+				
+				System.out.println("candidate: " + candidate + "\n");
+				
+				candidate = candidateUN[2] + " RP: ";
+				final JRadioButton candidate2 = new JRadioButton(candidate + candidatesRP[2]);
+				candidate2.setBounds(26, 134, 124, 23);
+				Election.add(candidate2);
+				
+				System.out.println("candidate: " + candidate + "\n");
+				
+				candidate = candidateUN[3] + " RP: ";
+				final JRadioButton candidate3 = new JRadioButton(candidate + candidatesRP[3]);
+				candidate3.setBounds(26, 160, 124, 23);
+				Election.add(candidate3);					
+				
+				candidate = candidateUN[4] + " RP: ";
+				final JRadioButton candidate4 = new JRadioButton(candidate + candidatesRP[4]);
+				candidate4.setBounds(152, 82, 130, 23);
+				Election.add(candidate4);
+				
+				candidate = candidateUN[5] + " RP: ";
+				final JRadioButton candidate5 = new JRadioButton(candidate + candidatesRP[5]);
+				candidate5.setBounds(152, 108, 130, 23);
+				Election.add(candidate5);					
+					
+				candidate = candidateUN[6] + " RP: ";
+				final JRadioButton candidate6 = new JRadioButton(candidate + candidatesRP[6]);
+				candidate6.setBounds(152, 134, 130, 23);
+				Election.add(candidate6);					
+				
+				candidate = candidateUN[7] + " RP: ";
+				final JRadioButton candidate7 = new JRadioButton(candidate + candidatesRP[7]);
+				candidate7.setBounds(152, 160, 130, 23);
+				Election.add(candidate7);					
+				
+				candidate = candidateUN[8] + " RP: ";
+				final JRadioButton candidate8 = new JRadioButton(candidate + candidatesRP[8]);
+				candidate8.setBounds(294, 82, 130, 23);
+				Election.add(candidate8);				
+				
+				candidate = candidateUN[9] + " RP: ";
+				final JRadioButton candidate9 = new JRadioButton(candidate + candidatesRP[9]);
+				candidate9.setBounds(294, 108, 130, 23);
+				Election.add(candidate9);	
+				
+				//Group all the radio buttons so we can retrieve data from them
+				ButtonGroup group = new ButtonGroup();
+				group.add(candidate0);
+				group.add(candidate1);
+			    group.add(candidate2);
+			    group.add(candidate3);
+			    group.add(candidate4);
+			    group.add(candidate5);
+			    group.add(candidate6);
+			    group.add(candidate7);
+			    group.add(candidate8);
+			    group.add(candidate9);
+			    
+			    JButton Electbtn = new JButton("Vote!");
+				Electbtn.setBounds(172, 213, 89, 23);
+				Election.add(Electbtn);
+				Electbtn.addMouseListener(new MouseAdapter() {
+					@Override
+					public void mouseClicked(MouseEvent arg0) {					
+					
+						//Capture this user's vote selection and submit it to the database
+					    if (candidate0.isSelected())
+						{
+							vote = candidateUN[0];	
+						}				    
+					    
+					    if (candidate1.isSelected())
+						{
+							vote = candidateUN[1];	
+						}
+					    
+					    if (candidate2.isSelected())
+						{
+							vote = candidateUN[2];	
+						}
+					    
+					    if (candidate3.isSelected())
+						{
+							vote = candidateUN[3];	
+						}
+					    
+					    if (candidate4.isSelected())
+						{
+							vote = candidateUN[4];	
+						}
+					    
+					    if (candidate5.isSelected())
+						{
+							vote = candidateUN[5];	
+						}
+					    
+					    if (candidate6.isSelected())
+						{
+							vote = candidateUN[6];	
+						}
+					    
+					    if (candidate7.isSelected())
+						{
+							vote = candidateUN[7];	
+						}
+					    
+					    if (candidate8.isSelected())
+						{
+							vote = candidateUN[8];	
+						}
+					    
+					    if (candidate9.isSelected())
+						{
+							vote = candidateUN[9];	
+						}
+					    
+					    //Submit the vote to the database		
+					    Game.elect(vote, getPrimaryKey(), getPlayerGame());
+					    
+					    //Check if the election is over, if true set results in database table 'player_role' 
+					    if (Game.electionFinishedCheck(getPlayerGame())==true)
+					    {
+					    	//Call the powers setting function
+					    	Game.setPlayerRoles(getPlayerGame());
+					    	//Go to the winner panel
+					    	Winner.removeAll();						
+							winner();
+							Winner.validate();
+							Winner.repaint();
+						    
+							Winner.setVisible(true);
+							Election.setVisible(false);				    	
+					    }
+					    
+					    //If the election is still running then go to the results page
+					    if (Game.electionFinishedCheck(getPlayerGame())==false)
+					    {
+					    	//Call the powers setting function
+					    	//Update the leader board
+						    ElectionResults.removeAll();						
+							resultsUpdate();
+							ElectionResults.validate();
+						    ElectionResults.repaint();
+						    
+							ElectionResults.setVisible(true);
+							Election.setVisible(false);
+					    }				    
 					}
-				    
-				    if (candidate2.isSelected())
-					{
-						vote = candidateUN[2];	
-					}
-				    
-				    if (candidate3.isSelected())
-					{
-						vote = candidateUN[3];	
-					}
-				    
-				    if (candidate4.isSelected())
-					{
-						vote = candidateUN[4];	
-					}
-				    
-				    if (candidate5.isSelected())
-					{
-						vote = candidateUN[5];	
-					}
-				    
-				    if (candidate6.isSelected())
-					{
-						vote = candidateUN[6];	
-					}
-				    
-				    if (candidate7.isSelected())
-					{
-						vote = candidateUN[7];	
-					}
-				    
-				    if (candidate8.isSelected())
-					{
-						vote = candidateUN[8];	
-					}
-				    
-				    if (candidate9.isSelected())
-					{
-						vote = candidateUN[9];	
-					}
-				    
-				    //Submit the vote to the database		
-				    Game.elect(vote, getPrimaryKey(), getPlayerGame());
-				    //Update the leader board
-				    ElectionResults.removeAll();						
-					resultsUpdate();
-					ElectionResults.validate();
-				    ElectionResults.repaint();
-				    
-					ElectionResults.setVisible(true);
-					Election.setVisible(false);
-				}
-			}); 
-		
-			JLabel lblTheElectionFor = DefaultComponentFactory.getInstance().createLabel("The Election for president is now available!");
-			lblTheElectionFor.setFont(new Font("Tahoma", Font.BOLD, 11));
-			lblTheElectionFor.setBounds(94, 23, 330, 14);
-			Election.add(lblTheElectionFor);
+				}); 
 			
-			JLabel lblPleaseVoteFor = DefaultComponentFactory.getInstance().createLabel("Please vote for the candidate you would like to have as president:");
-			lblPleaseVoteFor.setFont(new Font("Tahoma", Font.BOLD, 11));
-			lblPleaseVoteFor.setBounds(26, 48, 377, 14);
-			Election.add(lblPleaseVoteFor);	
+				JLabel lblTheElectionFor = DefaultComponentFactory.getInstance().createLabel("The Election for president is now available!");
+				lblTheElectionFor.setFont(new Font("Tahoma", Font.BOLD, 11));
+				lblTheElectionFor.setBounds(94, 23, 330, 14);
+				Election.add(lblTheElectionFor);
+				
+				JLabel lblPleaseVoteFor = DefaultComponentFactory.getInstance().createLabel("Please vote for the candidate you would like to have as president:");
+				lblPleaseVoteFor.setFont(new Font("Tahoma", Font.BOLD, 11));
+				lblPleaseVoteFor.setBounds(26, 48, 377, 14);
+				Election.add(lblPleaseVoteFor);	
+				
+				return;
+			}
 			
-			return;
+			//This player has already voted, take them to election results
+			else if (Game.electionVoteCheck(getPrimaryKey(), getPlayerGame()) == true)
+			{
+				//Update the leader board
+			    ElectionResults.removeAll();						
+				resultsUpdate();
+				ElectionResults.validate();
+				ElectionResults.paintImmediately(ElectionResults.getVisibleRect());//Force an immediate update
+			    
+			    //Display panel
+			    Election.setVisible(false);
+				ElectionResults.setVisible(true);
+							
+				return;
+			}
 		}
 		
-		//This player has already voted, take them to election results
-		else if (Game.electionVoteCheck(getPrimaryKey(), getPlayerGame()) == true)
+		//The election has completed, take this player to the winner page
+		else if (Game.electionFinishedCheck(getPlayerGame())==true)
 		{
-			//Update the leader board
-		    ElectionResults.removeAll();						
-			resultsUpdate();
-			ElectionResults.validate();
-			ElectionResults.paintImmediately(ElectionResults.getVisibleRect());//Force an immediate update
+			//Go to the winner panel
+	    	Winner.removeAll();						
+			winner();
+			Winner.validate();
+			Winner.repaint();
 		    
-		    //Display panel
-		    Election.setVisible(false);
-			ElectionResults.setVisible(true);
-						
-			return;
+			Winner.setVisible(true);
+			Election.setVisible(false);	
 		}
 	}//End of election update		
 	
@@ -916,32 +988,50 @@ public class Main {
 								//Election set up, go to election page
 								if ((Game.electionSetup(getPlayerGame())==true))
 								{									
-									if((Game.electionVoteCheck(getPrimaryKey(), getPlayerGame()) == false))
+									//Check if election completed, if so go to winner panel									
+									if (Game.electionFinishedCheck(getPlayerGame())==false)
 									{
-										//Update the election panel
-									    Election.removeAll();						
-										electionUpdate();
-										Election.validate();
-									    Election.repaint();
+										if((Game.electionVoteCheck(getPrimaryKey(), getPlayerGame()) == false))
+										{
+											//Update the election panel
+										    Election.removeAll();						
+											electionUpdate();
+											Election.validate();
+										    Election.repaint();
+											
+											Election.setVisible(true);	
+								    		GamesDisplay.setVisible(false);
+								    		System.out.println("repainted 950\n");
+										}
 										
-										Election.setVisible(true);	
-							    		GamesDisplay.setVisible(false);
-							    		System.out.println("repainted 950\n");
+							    		else if ((Game.electionVoteCheck(getPrimaryKey(), getPlayerGame()) == true))
+							    		{
+								    		//Update the leader board
+										    ElectionResults.removeAll();						
+											resultsUpdate();
+											ElectionResults.validate();
+											ElectionResults.paintImmediately(ElectionResults.getVisibleRect());//Force an immediate update
+										    
+										    //Display panel
+										    GamesDisplay.setVisible(false);
+											ElectionResults.setVisible(true);
+							    		}
+							    		return;
 									}
 									
-						    		else if ((Game.electionVoteCheck(getPrimaryKey(), getPlayerGame()) == true))
-						    		{
-							    		//Update the leader board
-									    ElectionResults.removeAll();						
-										resultsUpdate();
-										ElectionResults.validate();
-										ElectionResults.paintImmediately(ElectionResults.getVisibleRect());//Force an immediate update
+									//The election has completed, take this player to the winner page
+									else if (Game.electionFinishedCheck(getPlayerGame())==true)
+									{
+										//Go to the winner panel
+								    	Winner.removeAll();						
+										winner();
+										Winner.validate();
+										Winner.repaint();
 									    
-									    //Display panel
-									    GamesDisplay.setVisible(false);
-										ElectionResults.setVisible(true);
-						    		}
-						    		return;
+										Winner.setVisible(true);
+										GamesDisplay.setVisible(false);	
+										return;
+									}
 								}
 								//Election not set up, return to start menu
 								if((Game.electionSetup(getPlayerGame())==false))
@@ -1160,6 +1250,40 @@ public class Main {
 		gameNo.setBounds(214, 9, 51, 22);
 		StartGame.add(gameNo);
 		gameNo.setText("" + getPlayerGame());
+	}
+	
+	public void winner()
+	{
+		JLabel lblTheWinnerOf = DefaultComponentFactory.getInstance().createTitle("The Winner of the Election is");
+		lblTheWinnerOf.setFont(new Font("Comic Sans MS", Font.BOLD, 25));
+		lblTheWinnerOf.setBounds(22, 11, 426, 45);
+		Winner.add(lblTheWinnerOf);
+						
+		JButton btnQuit_2 = new JButton("Quit");
+		btnQuit_2.setBounds(174, 190, 89, 23);
+		Winner.add(btnQuit_2);
+		//Action listener
+		btnQuit_2.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent arg0) {
+				//Quit out of program
+				System.exit(0);
+				
+				return;
+			}
+		});
+		
+		if(loggedIn == true)
+		{
+			if (Game.electionFinishedCheck(getPlayerGame()) == true)
+			{
+				textField = new JTextField();
+				textField.setBounds(124, 106, 188, 20);
+				Winner.add(textField);
+				textField.setColumns(10);
+				textField.setText("" + Game.getElectionWinner(getPlayerGame()) + "!");
+			}
+		}		
 	}
 	
 	//Set the primary key value for the class

@@ -7,8 +7,6 @@ import java.sql.SQLException;
 import java.util.Vector;
 import com.mysql.jdbc.Statement;//To connect to the database
 
-//***To create a new game call INSERT INTO game (CREATED) values (null), add a function called 'create game' to let users create new games
-
 public class Game {	 
 	
 	//Class variables: Keep out of this class to keep it like a state machine	
@@ -46,9 +44,9 @@ public class Game {
 		Connection connect = null;		
 		PreparedStatement statement = null;
 		
+		//connect to jar file
 		connection();
-		//Creating a variable for the connection called "connect"
-		
+				
 		try{
 			
 			//connect to the database
@@ -146,7 +144,37 @@ public class Game {
 		}
 		System.out.println("Your profile has now been deleted from the database");
 	}
+	
+	//This function creates a new game in the database table 'game' that users can now join and play
+	//***Suggestion--let user input the 'title' of their game (include a string size check!!!) that lets them identify their game more easily
+	//**Maybe also add a 'created by' field to let them see that they themselves are the 'owner' of that game
+	public static void createGame()
+	{	
+		//Declare variables
+		Connection connect = null;		
+		PreparedStatement statement = null;
+		
+		//connect to jar file
+		connection();
 				
+		try{
+			
+			//connect to the database
+			connect = dbConnection();
+			
+			statement = connect.prepareStatement("INSERT INTO game (CREATED) values (null);");
+			statement.executeUpdate();
+								
+			//Disconnect from the database
+			connect.close();
+			statement.close();
+		}
+		
+		catch(SQLException o){
+			o.printStackTrace();
+		}		
+	}
+	
 	//This function is used to add a user to a game, sets their initial values across several tables
 	//Prereq: No games can be called 'game 0', this will cause failures--games can be any positive integer, just increment as necessary
 	public static void addToGame (int pk, int playerGame)
@@ -798,8 +826,7 @@ public class Game {
 		{
 			o.printStackTrace();
 		}
-	    
-	    
+	    	    
 		//Default is True 
 		return finished;
 	}
@@ -988,7 +1015,7 @@ public class Game {
 	{
 		Connection connect = null;
 		PreparedStatement statement = null;
-		ResultSet result = null;
+		ResultSet resultSet = null;
 		String[] electionResults = new String[10];
 		int j;
 		int votes = 0;
@@ -1001,21 +1028,21 @@ public class Game {
 			
 			//collect the candidates
 			statement = connect.prepareStatement("select E.CANDIDATE, E.YEA from election E, game G WHERE (E._FK_GAME = G._PK_GAME) AND (G._PK_GAME = " + playerGame +") ORDER BY E.YEA DESC;");
-			result = statement.executeQuery();
+			resultSet = statement.executeQuery();
 			
 			//populate the class member candidateList
 			for (j = 0; j <= 9; j ++)
 			{
-				result.next();//retrieve database data
+				resultSet.next();//retrieve database data
 				//Must concatenate into a String
-				votes = result.getInt(2);
+				votes = resultSet.getInt(2);
 				//convert that data into the arrays
-				electionResults[j] = result.getString(1) + " with " + Integer.toString(votes) + " votes";
+				electionResults[j] = resultSet.getString(1) + " with " + Integer.toString(votes) + " votes";
 			}
 			//Disconnect from the database
 			statement.close();
 			connect.close();
-			result.close();
+			resultSet.close();
 		}
 		catch(SQLException o)
 		{
@@ -1023,6 +1050,41 @@ public class Game {
 		}
 		
 		return electionResults;
+	}
+	
+	//This function returns the election winner for this game
+	public static String getElectionWinner(int playerGame)
+	{
+		Connection connect = null;
+		PreparedStatement statement = null;
+		ResultSet resultSet = null;
+		String winner = null;
+		
+		//Connect to the jar file
+		connection();		
+						
+		try{				
+			//Connect to the database
+			connect = dbConnection();
+			
+			//collect the candidates
+			statement = connect.prepareStatement("select E.CANDIDATE, E.YEA from election E, game G WHERE (E._FK_GAME = G._PK_GAME) AND (G._PK_GAME = " + playerGame +") ORDER BY E.YEA DESC LIMIT 1;");
+			resultSet = statement.executeQuery();
+			//Advance the result cursor
+			resultSet.next();
+			winner = resultSet.getString(1);
+			
+			//Disconnect from the database
+			statement.close();
+			connect.close();
+			resultSet.close();
+		}
+		catch(SQLException o)
+		{
+			o.printStackTrace();
+		}
+		
+		return winner;
 	}
 	
 	//This function sets all player roles for this game (President or Senator)
