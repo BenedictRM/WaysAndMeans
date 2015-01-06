@@ -29,7 +29,7 @@ public class Game {
 		
 		try{
 			//zeroDateTimeBehavior=convertToNull converts 0:00:00etc. time-stamps to null preventing the system from crashing
-			connect = DriverManager.getConnection("jdbc:mysql://localhost:3306/game?zeroDateTimeBehavior=convertToNull", "root","Scruffy#1");
+			connect = DriverManager.getConnection("jdbc:mysql://localhost:3306/game?zeroDateTimeBehavior=convertToNull", "your un","your pw");
 		}catch(SQLException o){
 			o.printStackTrace();
 		}
