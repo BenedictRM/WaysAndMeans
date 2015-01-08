@@ -2,15 +2,18 @@ import java.sql.Connection;
 import java.sql.Date;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
-import java.sql.PreparedStatement;
+import java.sql.PreparedStatement;//To connect to the database
 import java.sql.SQLException;
 import java.util.Vector;
-import com.mysql.jdbc.Statement;//To connect to the database
+
+//API Documentation (in progress)
+
+//Function requirements for this class:
+//Statement vs PreparedStatement -- in general go with Prepared Statement since it helps prevent SQL injection attacks
+//Class variables: Keep out of this class to keep it like a state machine
 
 public class Game {	 
-	
-	//Class variables: Keep out of this class to keep it like a state machine	
-			
+						
 	//Connect to sql JAR file
 	public static void connection()
 	{
@@ -29,7 +32,7 @@ public class Game {
 		
 		try{
 			//zeroDateTimeBehavior=convertToNull converts 0:00:00etc. time-stamps to null preventing the system from crashing
-			connect = DriverManager.getConnection("jdbc:mysql://localhost:3306/game?zeroDateTimeBehavior=convertToNull", "your un","your pw");
+			connect = DriverManager.getConnection("jdbc:mysql://localhost:3306/game?zeroDateTimeBehavior=convertToNull", "root","your password");
 		}catch(SQLException o){
 			o.printStackTrace();
 		}
@@ -76,7 +79,7 @@ public class Game {
 		String dbUsername = null;
 		String dbPassword = null;
 		int dbPrimarykey = 0;//May need to make this an int
-		Statement statement;
+		PreparedStatement statement;
 		ResultSet resultSet;
 		Connection connect = null;
 		
@@ -85,10 +88,12 @@ public class Game {
 		
 		try
 		{			
+			 //Connect to database
 			 connect = dbConnection();
-		     statement = (Statement) connect.createStatement();
-		     resultSet = statement.executeQuery("select * from player;");
-		     
+			 			 			 
+			 statement = connect.prepareStatement("select * from player;");
+			 resultSet = statement.executeQuery();
+			 
 			 while (resultSet.next()) 
 			 {      
 				    //retrieve data				    				    
@@ -161,7 +166,7 @@ public class Game {
 			
 			//connect to the database
 			connect = dbConnection();
-			
+			//Create a new game
 			statement = connect.prepareStatement("INSERT INTO game (CREATED) values (null);");
 			statement.executeUpdate();
 								
@@ -313,7 +318,7 @@ public class Game {
 		int _FK_GAME = 0;
 		String dbUsername = null;//Used to store each user name from candidates list
 		Connection connect = null;
-		Statement statement;
+		PreparedStatement statement;
 		PreparedStatement stmnt = null;
 		ResultSet resultSet;
 				
@@ -321,11 +326,11 @@ public class Game {
 		connection(); 
 		
 		try{
-			   connect = dbConnection();
-		       statement = (Statement) connect.createStatement();
-		     
-		       //Count the number of candidates in this game
-		       resultSet = statement.executeQuery("SELECT COUNT(C.YEA) FROM candidates C, game G WHERE (C._FK_GAME = G._PK_GAME) AND (YEA = 1) AND (G._PK_GAME = " + playerGame +");");
+			   connect = dbConnection();			   
+			   //Count the number of candidates who have answered yea in this game
+			   statement = connect.prepareStatement("SELECT COUNT(C.YEA) FROM candidates C, game G WHERE (C._FK_GAME = G._PK_GAME) AND (YEA = 1) AND (G._PK_GAME = " + playerGame +");");
+			   resultSet = statement.executeQuery();
+			   //Step through collected data
 		       resultSet.next();
 		       candidateCounter = resultSet.getInt(1);
 		     		    		       
@@ -370,7 +375,10 @@ public class Game {
 							stmnt.setInt(2, FK_CANDIDATE);
 							stmnt.setInt(3, _FK_GAME);
 							stmnt.executeUpdate();
-						}						
+						}		
+						
+						//Disconnect stmnt from database
+						stmnt.close();
 			       }			   	   			    
 
 			       //The election table has been filled
@@ -379,7 +387,7 @@ public class Game {
 		       
 		       //Disconnect from the database
 		       connect.close();
-		       statement.close();			   	
+		       statement.close();		       
 			   resultSet.close();			   
 		}
 		catch(SQLException o)
@@ -427,7 +435,7 @@ public class Game {
 	public static int inGameCount(int playerGame)
 	{			
 		Connection connect = null;
-		Statement statement;
+		PreparedStatement statement;
 		ResultSet resultSet;
 		int playersInGame;	
 		
@@ -436,12 +444,12 @@ public class Game {
 		connection();
 		
 		try{	
-			connect = dbConnection();
-
-			statement = (Statement) connect.createStatement();		     
-	        //Count the number of candidates in this game
-	        resultSet = statement.executeQuery("SELECT _FK_GAME FROM player_to_game WHERE _FK_GAME = " + playerGame + ";");
-	        
+			connect = dbConnection();         
+	        	        			
+			//Count the number of candidates in this game
+			statement = connect.prepareStatement("SELECT _FK_GAME FROM player_to_game WHERE _FK_GAME = " + playerGame + ";");	
+			resultSet = statement.executeQuery();
+			
 	        while (resultSet.next())
 	        {
 	        	playersInGame++;
@@ -470,7 +478,7 @@ public class Game {
 	{
 		boolean inGame = false;
 		Connection connect = null;
-		Statement statement;
+		PreparedStatement statement;
 		ResultSet resultSet;
 		
 		//Connect to jar file
@@ -479,12 +487,11 @@ public class Game {
 		try
 		{
 			 connect = dbConnection();
-		     statement = (Statement) connect.createStatement();
-		     
-		     //Return the player_to_game table with associated players
-		     resultSet = statement.executeQuery("SELECT P._PK_PLAYER, P2G._FK_PLAYER, P2G._FK_GAME FROM player P, player_to_game P2G " +
-		     		                               "WHERE P._PK_PLAYER = P2G._FK_PLAYER;");
-		     
+			 statement = connect.prepareStatement("SELECT P._PK_PLAYER, P2G._FK_PLAYER, P2G._FK_GAME FROM player P, player_to_game P2G " +
+                                                     "WHERE P._PK_PLAYER = P2G._FK_PLAYER;");			 
+			 //Return the player_to_game table with associated players
+			 resultSet = statement.executeQuery();
+			 
 		     //retrieve games for this player	
 		     while (resultSet.next()) 
 			 {      				    		       			        			    	 
@@ -536,15 +543,15 @@ public class Game {
 	{
 		Date startTime = null;
 		Connection connect = null;
-		Statement statement;
+		PreparedStatement statement;
 		ResultSet resultSet;
 		//Connect to jar file
 		connection();
 		try
 		{
-			connect = dbConnection();//Connect to db
-			statement = (Statement) connect.createStatement();//Create the statement		
-			resultSet = statement.executeQuery("SELECT G.STARTED FROM game G WHERE G._PK_GAME = " + playerGame + ";");
+			connect = dbConnection();//Connect to db						
+			statement = connect.prepareStatement("SELECT G.STARTED FROM game G WHERE G._PK_GAME = " + playerGame + ";");//Create the statement connection to the DB	
+			resultSet = statement.executeQuery();
 			
 			//Advance the resultSet, if true retrieve the date, otherwise it will be false on program start returning empty set
 			//  This if statement should block that from happening
@@ -592,7 +599,7 @@ public class Game {
 		int userCounter = 0;//To count user in this game in total
 		boolean answered = false;
 		Connection connect = null;
-		Statement statement;
+		PreparedStatement statement;
 		ResultSet resultSet;
 						
 		//Connect to jar file
@@ -600,27 +607,24 @@ public class Game {
 		
 		try
 		{
-			 connect = dbConnection();
-		     statement = (Statement) connect.createStatement();
-		     
-		     //Count the number of candidates in this game
-		     //resultSet = statement.executeQuery("SELECT COUNT(YEA) FROM candidates WHERE YEA = 1;");
-		     resultSet = statement.executeQuery("SELECT COUNT(C.YEA) FROM candidates C, " 
-		    		                             + "game G WHERE (C.YEA = 1) AND (C._FK_GAME = G._PK_GAME) AND (G._PK_GAME = " + playerGame +");");
-		     		    
+			 connect = dbConnection();	    			 
+			 //Count the number of candidates in this game
+			 statement = connect.prepareStatement("SELECT COUNT(C.YEA) FROM candidates C, " 
+                                                     + "game G WHERE (C.YEA = 1) AND (C._FK_GAME = G._PK_GAME) AND (G._PK_GAME = " + playerGame +");");			 
+			 //Set data in DAO
+			 resultSet = statement.executeQuery();
+			 //Advance cursor through data (i.e. retrieve it)
 		     resultSet.next();
 		     candidateCounter = resultSet.getInt(1);
 		     
 		     //Count the number of users in this game who have answered yea or nay
-		     //resultSet = statement.executeQuery("SELECT COUNT(PK), FROM candidates WHERE YEA = 1 OR NAY = 1;");
 		     resultSet = statement.executeQuery("SELECT COUNT(C._PK_CANDIDATES) FROM candidates C, " +
                       "game G WHERE (C._FK_GAME = G._PK_GAME) AND (C.YEA = 1 OR NAY = 1) AND (G._PK_GAME = " + playerGame +");");
-
+             //ADvance cursor to retrieve data stored in resultSet
 		     resultSet.next();
 		     answeredCounter = resultSet.getInt(1);
 		     
 		     //Count the number of users in this game's player database
-		     //resultSet = statement.executeQuery("SELECT COUNT(p.USERNAME) FROM player p;");
 		     //Count the number of users in this games player database
 		     resultSet = statement.executeQuery("SELECT COUNT(P.USERNAME) FROM player P, player_to_game P2G, game G WHERE" +
 		     		                             " (P._PK_PLAYER = P2G._FK_PLAYER) AND (P2G._FK_GAME = G._PK_GAME) AND (G._PK_GAME = " + playerGame +");");
@@ -698,7 +702,7 @@ public class Game {
 	public static boolean userNameCheck(String i)
 	{
 		Connection connect = null;
-		Statement statement;
+		PreparedStatement statement;
 		ResultSet resultSet;
 		
 		//Connect to jar file
@@ -706,11 +710,11 @@ public class Game {
 		
 		try{
 			connect = dbConnection();
-	        statement = (Statement) connect.createStatement();
-	     
-	        //Count the number of candidates in this game
-	        resultSet = statement.executeQuery("SELECT USERNAME FROM player;");
-	        
+	 	    
+			//Retrieve username's for checking uniqueness 
+			statement = connect.prepareStatement("SELECT USERNAME FROM player;");
+			resultSet = statement.executeQuery();
+			
 	        //Check the database user names against this user name
 	        while (resultSet.next())
 	        {
@@ -742,7 +746,7 @@ public class Game {
 	{
 		boolean voted = false;
 		Connection connect = null;
-		Statement statement;
+		PreparedStatement statement;
 		ResultSet resultSet;
 		
 		//Connect to jar file
@@ -750,13 +754,14 @@ public class Game {
 		
 		try
 		{
-			 connect = dbConnection();
-		     statement = (Statement) connect.createStatement();
-		     //Pull this player from voting_history
-		     resultSet = statement.executeQuery("SELECT ELECTION FROM voting_history V, player_to_game P2G " 
+			 //Connect to DB
+			 connect = dbConnection();			 
+			 //Pull this player from voting_history
+			 statement = connect.prepareStatement("SELECT ELECTION FROM voting_history V, player_to_game P2G " 
                      + "WHERE (V._FK_P2G = P2G._PK_P2G) AND (P2G._FK_PLAYER = " + pk + ") AND (P2G._FK_GAME = " + playerGame + ");");
-
-		     //Pull resultSet data
+			 //Set data into resultset
+			 resultSet = statement.executeQuery();		     
+		     //Pull resultSet data by advancing cursor
 		     resultSet.next();
 
 		     if (resultSet.getInt("ELECTION") == 1)
@@ -785,7 +790,7 @@ public class Game {
 	{
 	    boolean finished = true;
 	    Connection connect = null;
-	    Statement statement;
+	    PreparedStatement statement;
 		ResultSet resultSet;
 		
 		//Connect to jar file
@@ -793,12 +798,13 @@ public class Game {
 		
 		try
 		{
-			 connect = dbConnection();
-		     statement = (Statement) connect.createStatement();
+			 connect = dbConnection();			 
 			 //Do a sort on voting_history for this game, check the election column--if any values == 0 then election not completed
-		     resultSet = statement.executeQuery("SELECT ELECTION FROM voting_history V, player_to_game P2G " 
+			 statement = connect.prepareStatement("SELECT ELECTION FROM voting_history V, player_to_game P2G " 
                      + "WHERE (V._FK_P2G = P2G._PK_P2G) AND (P2G._FK_GAME = " + playerGame + ");");
-
+			 //Store resultSet data
+			 resultSet = statement.executeQuery();
+			 
 		     //Cycle through resultSet data
 		     while(resultSet.next())
 		     {
@@ -838,7 +844,7 @@ public class Game {
 		//Since the there is in an unknown number of games at program start, use a Vector
 		Vector<Integer> games = new Vector<Integer>();//use games.size() to get final size of Vector	
 		Connection connect = null;
-		Statement statement;
+		PreparedStatement statement;
 		ResultSet resultSet;
 		
 		//Connect to jar file
@@ -847,10 +853,11 @@ public class Game {
 		try
 		{
 			 connect = dbConnection();
-		     statement = (Statement) connect.createStatement();
-		     
-		     //Return all games from game list that have not started
-		     resultSet = statement.executeQuery("SELECT G._PK_GAME from game G WHERE G.STARTED = 0;");
+			 						 
+			 //Return all games from game list that have not started
+		     statement = connect.prepareStatement("SELECT G._PK_GAME from game G WHERE G.STARTED = 0;");
+		     resultSet = statement.executeQuery();
+		     		   
 		     
 		     //retrieve game ID's
 		     while (resultSet.next()) 
@@ -880,7 +887,7 @@ public class Game {
 		//Since the player is in an unknown number of games at program start, use a Vector
 		Vector<Integer> games = new Vector<Integer>();//use games.size() to get final size of Vector	
 		Connection connect = null;
-		Statement statement;
+		PreparedStatement statement;
 		ResultSet resultSet;
 		
 		//Connect to jar file
@@ -889,12 +896,12 @@ public class Game {
 		try
 		{
 			 connect = dbConnection();
-		     statement = (Statement) connect.createStatement();
-		     
-		     //Return player_to_game_list
-		     resultSet = statement.executeQuery("SELECT P._PK_PLAYER, P2G._FK_PLAYER, P2G._FK_GAME FROM player P, player_to_game P2G " +
-		     		                               "WHERE P._PK_PLAYER = P2G._FK_PLAYER;");
-		     
+     			 						 
+			 statement = connect.prepareStatement("SELECT P._PK_PLAYER, P2G._FK_PLAYER, P2G._FK_GAME FROM player P, player_to_game P2G " +
+                                                     "WHERE P._PK_PLAYER = P2G._FK_PLAYER;");
+			 //Return player_to_game_list
+			 resultSet = statement.executeQuery();
+			 
 		     //retrieve game ID's
 		     while (resultSet.next()) 
 			 {      				    		       			        			    	 
