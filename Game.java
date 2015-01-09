@@ -6,16 +6,21 @@ import java.sql.PreparedStatement;//To connect to the database
 import java.sql.SQLException;
 import java.util.Vector;
 
-//API Documentation (in progress)
+/**
+*API Documentation (in progress)
 
-//Function requirements for this class:
-//Statement vs PreparedStatement -- in general go with Prepared Statement since it helps prevent SQL injection attacks
-//Class variables: Keep out of this class to keep it like a state machine
+*Function requirements for this class:
+*Statement vs PreparedStatement -- in general go with Prepared Statement since it helps prevent SQL injection attacks
+*Class variables: Keep out of this class to keep it like a state machine
+*Sounds like it is best to use  using wrapper datatype objects (Long, Integer, etc.) instead of primitive datatypes (long, int, etc.) is preferred. Consider changing, due to datatypes in sql being able to be null and primitive types in Java cannot be null
+*Close DB connections in reverse order as aquired to avoid unexpected errors
+*@author Russ Mehring
+*/
 
 public class Game {	 
 						
-	//Connect to sql JAR file
-	public static void connection()
+	//Connect to sql JAR file, private to ensure only DAO has access to this data
+	private static void connection()
 	{
 		try{
 			//Accessing driver from the JAR file
@@ -26,13 +31,14 @@ public class Game {
 	}
 	
 	//This function connects to the mysql database game, once on server we can change passwords more easily from here
-	public static Connection dbConnection()
+	//Private to ensure only DAO has access to this data
+	private static Connection dbConnection()
 	{
 		Connection connect = null;
 		
 		try{
 			//zeroDateTimeBehavior=convertToNull converts 0:00:00etc. time-stamps to null preventing the system from crashing
-			connect = DriverManager.getConnection("jdbc:mysql://localhost:3306/game?zeroDateTimeBehavior=convertToNull", "root","your password");
+			connect = DriverManager.getConnection("jdbc:mysql://localhost:3306/game?zeroDateTimeBehavior=convertToNull", "root","Scruffy#1");
 		}catch(SQLException o){
 			o.printStackTrace();
 		}
@@ -63,8 +69,8 @@ public class Game {
 			statement.executeUpdate();
 								
 			//Disconnect from the database
-			connect.close();
 			statement.close();
+			connect.close();		
 		}
 		
 		catch(SQLException o){
@@ -79,8 +85,8 @@ public class Game {
 		String dbUsername = null;
 		String dbPassword = null;
 		int dbPrimarykey = 0;//May need to make this an int
-		PreparedStatement statement;
-		ResultSet resultSet;
+		PreparedStatement statement = null;
+		ResultSet resultSet = null;
 		Connection connect = null;
 		
 		//Connect to jar file
@@ -109,10 +115,10 @@ public class Game {
 			        }
 			 }
 			 
-			//Disconnect from the database
-			connect.close(); 
+			//Disconnect from the database			 
 			statement.close();
-			resultSet.close(); 			
+			resultSet.close(); 
+			connect.close();
 		     
 			 return dbPrimarykey;
 		}
@@ -139,9 +145,9 @@ public class Game {
 			connect = dbConnection();
 		    statement = connect.prepareStatement("DELETE FROM player WHERE _PK_PLAYER = " + pk);
 			statement.executeUpdate();
-			//Disconnect from the database
+			//Disconnect from the database			
+			statement.close();	
 			connect.close();
-			statement.close();			
 		}
 		
 		catch(SQLException o){
@@ -170,9 +176,9 @@ public class Game {
 			statement = connect.prepareStatement("INSERT INTO game (CREATED) values (null);");
 			statement.executeUpdate();
 								
-			//Disconnect from the database
-			connect.close();
+			//Disconnect from the database			
 			statement.close();
+			connect.close();
 		}
 		
 		catch(SQLException o){
@@ -184,13 +190,13 @@ public class Game {
 	//Prereq: No games can be called 'game 0', this will cause failures--games can be any positive integer, just increment as necessary
 	public static void addToGame (int pk, int playerGame)
 	{
-		Connection connect = null;
-		PreparedStatement statement = null; 
-		ResultSet resultSet;//For retrieving database data
 		int game = playerGame;//users game that they wish to join
 		int dbpk = pk;//user's pk
 		int PK_P2G = 0;//This will set the FK player role for this user
-		
+		Connection connect = null;
+		PreparedStatement statement = null; 
+		ResultSet resultSet = null;//For retrieving database data
+				
 		//Connect to jar file
 		connection();
 												
@@ -226,10 +232,10 @@ public class Game {
 			 statement.setInt(1, PK_P2G);		
 			 statement.executeUpdate();
 			 
-			 //Disconnect from the database
-			 connect.close();
+			 //Disconnect from the database			
 			 statement.close();
 			 resultSet.close();
+			 connect.close();
 		}
 			catch(SQLException o)
 			{				
@@ -257,9 +263,9 @@ public class Game {
 			statement.setString(1, null);//Send a null value to trigger an update (effectively starts the game)
 			statement.executeUpdate();						
 			
-			//Disconnect from the database
+			//Disconnect from the database		    
+		    statement.close();	
 		    connect.close();
-		    statement.close();		
 		}
 		catch(SQLException o)
 		{
@@ -298,9 +304,9 @@ public class Game {
 					     break;
 				     }				  			  
 			 }
-			 //Disconnect from the database
+			 //Disconnect from the database			 
+			 stmnt.close();	
 			 connect.close();
-			 stmnt.close();			
 		}
 		
 		catch(SQLException o)
@@ -318,9 +324,9 @@ public class Game {
 		int _FK_GAME = 0;
 		String dbUsername = null;//Used to store each user name from candidates list
 		Connection connect = null;
-		PreparedStatement statement;
+		PreparedStatement statement = null;
 		PreparedStatement stmnt = null;
-		ResultSet resultSet;
+		ResultSet resultSet = null;
 				
 		//Connect to jar file
 		connection(); 
@@ -385,10 +391,10 @@ public class Game {
 			       return true;
 		 	   }
 		       
-		       //Disconnect from the database
-		       connect.close();
+		       //Disconnect from the database		       
 		       statement.close();		       
-			   resultSet.close();			   
+			   resultSet.close();	
+			   connect.close();
 		}
 		catch(SQLException o)
 		{
@@ -420,9 +426,9 @@ public class Game {
 			statement = connect.prepareStatement("UPDATE voting_history V, player_to_game P2G SET V.ELECTION = 1 WHERE (V._FK_P2G = P2G._PK_P2G) AND (P2G._FK_PLAYER = " + pk + ") AND (P2G._FK_GAME = " + playerGame + ");");		
 			statement.executeUpdate();
 			
-			//Disconnect from the database
+			//Disconnect from the database			
+			statement.close();	
 			connect.close();
-			statement.close();		
 		}
 		
 		catch(SQLException o)
@@ -434,12 +440,11 @@ public class Game {
 	//This function returns the number of players who are in the game the user is currently in
 	public static int inGameCount(int playerGame)
 	{			
+		int playersInGame = 0;	
 		Connection connect = null;
-		PreparedStatement statement;
-		ResultSet resultSet;
-		int playersInGame;	
-		
-		playersInGame = 0;
+		PreparedStatement statement = null;
+		ResultSet resultSet = null;	
+
 		//Connect to jar file
 		connection();
 		
@@ -455,11 +460,9 @@ public class Game {
 	        	playersInGame++;
 	        }
 	        
-			//Disconnect from the database
-		    connect.close();
+			//Disconnect from the database		   
 		    statement.close();
-		    
-		    System.out.println("Players in this game is: " + playersInGame + "\n");
+		    connect.close();
 		    
 		    return playersInGame;		
 	    }
@@ -478,8 +481,8 @@ public class Game {
 	{
 		boolean inGame = false;
 		Connection connect = null;
-		PreparedStatement statement;
-		ResultSet resultSet;
+		PreparedStatement statement = null;
+		ResultSet resultSet = null;
 		
 		//Connect to jar file
 		connection();
@@ -523,10 +526,10 @@ public class Game {
 			        }
 			 }
 		     
-		     //Disconnect from the database and close statements (might be possible to hack the statements if they stay open)
-		     connect.close();
+		     //Disconnect from the database and close statements (might be possible to hack the statements if they stay open)		     
 		     statement.close();				 				
-			 resultSet.close();		     
+			 resultSet.close();		
+			 connect.close();
 		}
 		
 		catch(SQLException o)
@@ -543,8 +546,8 @@ public class Game {
 	{
 		Date startTime = null;
 		Connection connect = null;
-		PreparedStatement statement;
-		ResultSet resultSet;
+		PreparedStatement statement = null;
+		ResultSet resultSet = null;
 		//Connect to jar file
 		connection();
 		try
@@ -563,20 +566,20 @@ public class Game {
 			//This game has not started
 			if (startTime == null)
 			{
-				//Disconnect from the database
-				connect.close();
+				//Disconnect from the database				
 			    statement.close();				 				
 				resultSet.close();
+				connect.close();
 				
 				return false;
 			}
 			    //This game has started
 				else
 				{
-					//Disconnect from the database
-					connect.close();
+					//Disconnect from the database					
 				    statement.close();				 				
 					resultSet.close();
+					connect.close();
 					
 					return true;
 				}						
@@ -599,8 +602,8 @@ public class Game {
 		int userCounter = 0;//To count user in this game in total
 		boolean answered = false;
 		Connection connect = null;
-		PreparedStatement statement;
-		ResultSet resultSet;
+		PreparedStatement statement = null;
+		ResultSet resultSet = null;
 						
 		//Connect to jar file
 		connection();
@@ -681,10 +684,10 @@ public class Game {
 	        		  }		        	  		          		        	  
 			     }
 			     		    		     
-				 //Disconnect from the database
-			     connect.close();
+				 //Disconnect from the database		     
 			     statement.close();				 				
 				 resultSet.close();
+				 connect.close();
 				 
 				 //Either we have all the candidates, or this user has responded already, or this user doesn't qualify to run
 				 return false;
@@ -702,8 +705,8 @@ public class Game {
 	public static boolean userNameCheck(String i)
 	{
 		Connection connect = null;
-		PreparedStatement statement;
-		ResultSet resultSet;
+		PreparedStatement statement = null;
+		ResultSet resultSet = null;
 		
 		//Connect to jar file
 		connection();
@@ -727,9 +730,9 @@ public class Game {
 	        	}
 	        }
 	        
-	        //Disconnect from the database
-		    connect.close();
+	        //Disconnect from the database		    
 		    statement.close();
+		    connect.close();
 		    return false;			
 		}
 		
@@ -746,8 +749,8 @@ public class Game {
 	{
 		boolean voted = false;
 		Connection connect = null;
-		PreparedStatement statement;
-		ResultSet resultSet;
+		PreparedStatement statement = null;
+		ResultSet resultSet = null;
 		
 		//Connect to jar file
 		connection();
@@ -769,10 +772,10 @@ public class Game {
 		    	 //This player has voted in this election
 		    	 voted = true;
 		     }
-		     //Disconnect from the database
-		     connect.close();
+		     //Disconnect from the database		     
 		     statement.close();
 		     resultSet.close();
+		     connect.close();
 		}
 		
 		catch(SQLException o)
@@ -790,8 +793,8 @@ public class Game {
 	{
 	    boolean finished = true;
 	    Connection connect = null;
-	    PreparedStatement statement;
-		ResultSet resultSet;
+	    PreparedStatement statement = null;
+		ResultSet resultSet = null;
 		
 		//Connect to jar file
 		connection();
@@ -822,10 +825,10 @@ public class Game {
 			     }
 		     }
 		     
-		     //Disconnect from the database
-		     connect.close();
+		     //Disconnect from the database		     
 		     statement.close();
 		     resultSet.close();
+		     connect.close();
 		}
 		
 		catch(SQLException o)
@@ -844,8 +847,8 @@ public class Game {
 		//Since the there is in an unknown number of games at program start, use a Vector
 		Vector<Integer> games = new Vector<Integer>();//use games.size() to get final size of Vector	
 		Connection connect = null;
-		PreparedStatement statement;
-		ResultSet resultSet;
+		PreparedStatement statement = null;
+		ResultSet resultSet = null;
 		
 		//Connect to jar file
 		connection();
@@ -866,10 +869,10 @@ public class Game {
 		    	 games.addElement(new Integer(resultSet.getInt("_PK_GAME")));    
 			 }
 		     
-		     //Disconnect from the database and close statements (might be possible to hack the statements if they stay open)
-		     connect.close();
+		     //Disconnect from the database and close statements (might be possible to hack the statements if they stay open)		     
 		     statement.close();				 				
-			 resultSet.close();		     
+			 resultSet.close();	
+			 connect.close();
 		}
 		
 			catch(SQLException o)
@@ -887,19 +890,20 @@ public class Game {
 		//Since the player is in an unknown number of games at program start, use a Vector
 		Vector<Integer> games = new Vector<Integer>();//use games.size() to get final size of Vector	
 		Connection connect = null;
-		PreparedStatement statement;
-		ResultSet resultSet;
+		PreparedStatement statement = null;
+		ResultSet resultSet = null;
 		
 		//Connect to jar file
 		connection();
 			
 		try
 		{
+			 //Connect to DB
 			 connect = dbConnection();
-     			 						 
+			 //Return player_to_game_list						 
 			 statement = connect.prepareStatement("SELECT P._PK_PLAYER, P2G._FK_PLAYER, P2G._FK_GAME FROM player P, player_to_game P2G " +
                                                      "WHERE P._PK_PLAYER = P2G._FK_PLAYER;");
-			 //Return player_to_game_list
+			 //Store retrieved data
 			 resultSet = statement.executeQuery();
 			 
 		     //retrieve game ID's
@@ -918,10 +922,10 @@ public class Game {
 			        }
 			 }
 		     
-		     //Disconnect from the database and close statements (might be possible to hack the statements if they stay open)
-		     connect.close();
+		     //Disconnect from the database and close statements (might be possible to hack the statements if they stay open)		     
 		     statement.close();				 				
-			 resultSet.close();		     
+			 resultSet.close();		
+			 connect.close();
 		}
 		
 			catch(SQLException o)
@@ -936,15 +940,15 @@ public class Game {
 	//returns an array of size 10 with all RPs 
 	public static int[] getCandidatesRP(int playerGame)
 	{
+		int j = 0;
+		int[] candidateRP = new int[10];	
 		Connection connect = null;
 		PreparedStatement statement = null;
-		ResultSet result = null;
-		int[] candidateRP = new int[10];
-		int j;
+		ResultSet result = null;		
 		
 		try{	
+			//Connect to DB
 			connect = dbConnection();
-
 			//collect the candidates
 			statement = connect.prepareStatement("select P.REPUTATION_POINTS " + 
 			                                  "FROM player P, candidates C, player_to_game P2G, game G WHERE (C._FK_PLAYER = P._PK_PLAYER)" +
@@ -959,9 +963,9 @@ public class Game {
 				candidateRP[j] = result.getInt(1);
 			}
 			//Disconnect from the database
-			statement.close();
-			connect.close();
+			statement.close();			
 			result.close();
+			connect.close();
 		}
 		catch(SQLException o)
 		{
@@ -975,10 +979,11 @@ public class Game {
 	//Returns an array of size 10
 	public static String[] getCandidates(int playerGame)
 	{
+		String[] candidateList = new String[10];//Holds candidate list for each game
 		Connection connect = null;
 		PreparedStatement statement = null;
 		ResultSet result = null;
-		String[] candidateList = new String[10];//Holds candidate list for each game
+		
 		//Connect to the database
 		connection();				
 		int j;
@@ -1004,9 +1009,9 @@ public class Game {
 			}
 
 			//Disconnect from the database
-			statement.close();
-			connect.close();
+			statement.close();			
 			result.close();
+			connect.close();
 		}
 		catch(SQLException o)
 		{
@@ -1020,12 +1025,13 @@ public class Game {
 	//Returns an array of size 10
 	public static String[] getElectionResults(int playerGame)
 	{
+		int j = 0;
+		int votes = 0;
+		String[] electionResults = new String[10];
 		Connection connect = null;
 		PreparedStatement statement = null;
-		ResultSet resultSet = null;
-		String[] electionResults = new String[10];
-		int j;
-		int votes = 0;
+		ResultSet resultSet = null;	
+		
 		//Connect to the jar file
 		connection();		
 						
@@ -1047,9 +1053,9 @@ public class Game {
 				electionResults[j] = resultSet.getString(1) + " with " + Integer.toString(votes) + " votes";
 			}
 			//Disconnect from the database
-			statement.close();
-			connect.close();
+			statement.close();			
 			resultSet.close();
+			connect.close();
 		}
 		catch(SQLException o)
 		{
@@ -1062,10 +1068,10 @@ public class Game {
 	//This function returns the election winner for this game
 	public static String getElectionWinner(int playerGame)
 	{
+		String winner = null;
 		Connection connect = null;
 		PreparedStatement statement = null;
-		ResultSet resultSet = null;
-		String winner = null;
+		ResultSet resultSet = null;	
 		
 		//Connect to the jar file
 		connection();		
@@ -1082,9 +1088,9 @@ public class Game {
 			winner = resultSet.getString(1);
 			
 			//Disconnect from the database
-			statement.close();
-			connect.close();
+			statement.close();			
 			resultSet.close();
+			connect.close();
 		}
 		catch(SQLException o)
 		{
@@ -1100,10 +1106,11 @@ public class Game {
 	public static void setPlayerRoles(int playerGame)
 	{
 		//Function variables
+		int P2G_PK = 0;
 		Connection connect = null;
 		PreparedStatement statement = null;
 		ResultSet result = null;
-		int P2G_PK;
+		
 		//Connect to the jar file
 		connection();
 		
@@ -1133,9 +1140,9 @@ public class Game {
 			}
 						
 			//Disconnect from the database
-			statement.close();
-			connect.close();
+			statement.close();			
 			result.close();
+			connect.close();
 		}
 		catch(SQLException o)
 		{
