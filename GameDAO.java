@@ -23,13 +23,13 @@ public interface GameDAO {
 	 * @param password
 	 * @return
 	 */
-	public int login (String username, String password);
+	public Integer login (String username, String password);
 	
 	/**
 	 * Delete user from player table and game database all together
 	 * @param pk
 	 */
-	public void deleteUser (int pk);
+	public void deleteUser (Integer pk);
 	
 	/**
 	 * This function creates a new game in the database table 'game' that users can now join and play
@@ -40,27 +40,27 @@ public interface GameDAO {
 	*This function is used to add a user to a game, sets their initial values across several tables
 	*Prereq: No games can be called 'game 0', this will cause failures--games can be any positive integer, just increment as necessary
 	*/
-	public void addToGame (int pk, int playerGame);
+	public void addToGame (Integer pk, Integer playerGame);
 	
 	/**
 	 * This function starts a game with at least 10 players in it
 	 * @param playerGame
 	 */
-	public void startGame(int playerGame);
+	public void startGame(Integer playerGame);
 	
 	/**
 	 * This function will be called to add a user's response to running for president to the database
 	 * @param ans
 	 * @param pk
 	 */
-	public void candidateAdd (String ans, int pk);
+	public void candidateAdd (String ans, Integer pk);
 	
 	/**
 	 * Sets up election table, if it has already been set up then it skips setup
 	 * @param playerGame
 	 * @return
 	 */
-	public boolean electionSetup(int playerGame);
+	public Boolean electionSetup(Integer playerGame);
 	
 	/**
 	 * This function sets player's vote for president, players votes are kept in voting_history table
@@ -68,28 +68,28 @@ public interface GameDAO {
 	 * @param pk
 	 * @param playerGame
 	 */
-	public void elect (String vote, int pk, int playerGame);
+	public void elect (String vote, Integer pk, Integer playerGame);
 	
 	/**
 	 * This function returns the number of players who are in the game the user is currently in
 	 * @param playerGame
 	 * @return
 	 */
-	public int inGameCount(int playerGame);
+	public Integer inGameCount(Integer playerGame);
 	
 	/**
 	 * This function is used to check if a logged in player is in a game, if not ask them to join a game
 	 * @param pk
 	 * @return
 	 */
-	public boolean inGameCheck (int pk);
+	public Boolean inGameCheck (Integer pk);
 	
 	/**
 	 * Check to see if the game this player is actively in has started
 	 * @param playerGame
 	 * @return
 	 */
-	public boolean gameStartedCheck(int playerGame);
+	public Boolean gameStartedCheck(Integer playerGame);
 	
 	/**
 	 * while candidate list <= 10 and user rp >= to top candidates and user has not already replied nay to running return true else false
@@ -97,14 +97,14 @@ public interface GameDAO {
 	 * @param playerGame
 	 * @return
 	 */
-	public boolean candidateCheck (int pk, int playerGame);
+	public Boolean candidateCheck (Integer pk, Integer playerGame);
 	
 	/**
 	 * This function is used to check a new user's userName against the database to make sure their name is unique
 	 * @param i
 	 * @return
 	 */
-	public boolean userNameCheck(String i);
+	public Boolean userNameCheck(String i);
 	
 	/**
 	 * This function determines if a player has already cast a vote for this election
@@ -113,7 +113,7 @@ public interface GameDAO {
 	 * @param playerGame
 	 * @return
 	 */	
-	public boolean electionVoteCheck(int pk, int playerGame);
+	public Boolean electionVoteCheck(Integer pk, Integer playerGame);
 	
 	/**
 	 * This function determines if an election has been completed (***Currently just checks if everyone has voted, later add time constraint)
@@ -121,7 +121,7 @@ public interface GameDAO {
 	 * @param playerGame
 	 * @return
 	 */	
-	public boolean electionFinishedCheck(int playerGame);
+	public Boolean electionFinishedCheck(Integer playerGame);
 	
 	/**
 	 * This function returns a Vector of available games for a player to join 
@@ -136,7 +136,7 @@ public interface GameDAO {
 	 * @param pk
 	 * @return
 	 */	
-	public Vector <Integer> getPlayerGames(int pk);
+	public Vector <Integer> getPlayerGames(Integer pk);
 	
 	/**
 	 * Retrieve candidates reputation points list for this game's election for president
@@ -144,7 +144,7 @@ public interface GameDAO {
 	 * @param playerGame
 	 * @return
 	 */
-	public int[] getCandidatesRP(int playerGame);
+	public Integer[] getCandidatesRP(Integer playerGame);
 	
 	/**
 	 * Retrieve the candidates list for this games election for president
@@ -152,7 +152,7 @@ public interface GameDAO {
 	 * @param playerGame
 	 * @return
 	 */	
-	public String[] getCandidates(int playerGame);
+	public String[] getCandidates(Integer playerGame);
 	
 	/**
 	 * Retrieve the election results for this specific game
@@ -160,20 +160,20 @@ public interface GameDAO {
 	 * @param playerGame
 	 * @return
 	 */	
-	public String[] getElectionResults(int playerGame);
+	public String[] getElectionResults(Integer playerGame);
 	
 	/**
 	 * This function returns the election winner for this game
 	 * @param playerGame
 	 * @return
 	 */
-	public String getElectionWinner(int playerGame);
+	public String getElectionWinner(Integer playerGame);
 	
 	/**
 	 * This function sets all player roles for this game (President or Senator)
 	 * Call this function after an election has been completed
 	 * @param playerGame
 	 */
-	public void setPlayerRoles(int playerGame);
+	public void setPlayerRoles(Integer playerGame);
 
 }

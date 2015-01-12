@@ -1,20 +1,27 @@
 import java.awt.EventQueue;
 
 import javax.swing.JFrame;
+
 import java.awt.CardLayout;
+
 import javax.swing.ButtonGroup;
 import javax.swing.JPanel;
 import javax.swing.JButton;
 import javax.swing.JLabel;
+
 import com.jgoodies.forms.factories.DefaultComponentFactory;
+
 import java.awt.Font;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
+
 import javax.swing.JTextField;
+
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.Enumeration;
 import java.util.Vector;
+
 import javax.swing.JRadioButton;
 import javax.swing.SwingConstants;
 import javax.swing.JScrollBar;
@@ -51,7 +58,6 @@ public class Main {
   	private boolean gameContinued;
   	private int playerGame;//stores the game number player has continued/ joined
   	private JTextField textField;
-  	private Game Game = new Game();//Delete later, just accessing GameDAO directly right now
    
     
 	/**
@@ -60,16 +66,7 @@ public class Main {
 	public static void main(String[] args) {
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
-				try {				                															
-					//Just some test stuff
-					// Obtain DAOFactory.
-				    DAOFactory javabase = DAOFactory.getInstance("game.jdbc");
-				    // Obtain GameDAO.
-				    GameDAO gameDAO = javabase.getUserDAO();
-					System.out.println("DAOFactory successfully obtained: " + javabase);
-					System.out.println("UserDAO successfully obtained: " + gameDAO);
-					//End test stuff
-					
+				try {				                																				
 					Main window = new Main();
 					window.frame.setVisible(true);
 				} catch (Exception e) {
@@ -97,6 +94,15 @@ public class Main {
 	 * Initialize the contents of the frame.
 	 */
 	private void initialize() {				
+		
+		// Vars ---------------------------------------------------------------------------------------
+		// Obtain DAOFactory.
+	    DAOFactory javabase = DAOFactory.getInstance("game.jdbc");
+	    // Obtain GameDAO. Use this to call Game methods
+	    final GameDAO gameDAO = javabase.getUserDAO();
+		System.out.println("DAOFactory successfully obtained: " + javabase);
+		System.out.println("UserDAO successfully obtained: " + gameDAO);
+		
 		frame = new JFrame();
 		frame.setBounds(100, 100, 450, 300);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -170,7 +176,7 @@ public class Main {
 	    btnCreateGame.addActionListener(new ActionListener() {
 	    	public void actionPerformed(ActionEvent arg0) {
 	    		label.setText("Game Created!");
-	    		Game.createGame();//create new game               
+	    		gameDAO.createGame();//create new game               
 	    	}
 	    });
 	    
@@ -179,7 +185,7 @@ public class Main {
 	    btnContinueGame.setBounds(151, 181, 125, 23);
 	    StartMenu.add(btnContinueGame);
 	    
-	    if ((getPrimaryKey() == 0) || (Game.inGameCheck(getPrimaryKey()) == false))
+	    if ((getPrimaryKey() == 0) || (gameDAO.inGameCheck(getPrimaryKey()) == false))
 	    {	    	
 	    	btnContinueGame.setEnabled(false);
 	    }
@@ -283,17 +289,17 @@ public class Main {
 				
 				if (pass.equals(passCheck) == true && (!pass.equals("password")))
 				{
-					if(Game.userNameCheck(user) == true)
+					if(gameDAO.userNameCheck(user) == true)
 					{
 						lblUsernameAlreadyTaken.setText("Username Already Taken!");
 					}
-					System.out.println(Game.userNameCheck(user));
-					if(Game.userNameCheck(user) == false)
+					System.out.println(gameDAO.userNameCheck(user));
+					if(gameDAO.userNameCheck(user) == false)
 					{	
 						//Create the new user
-						Game.createNew(primaryKey, user, pass);		
+						gameDAO.createNew(primaryKey, user, pass);		
 						//Login the new user to get the primary key
-						pk = Game.login(user, pass);
+						pk = gameDAO.login(user, pass);
 												
 						setPrimaryKey(pk);
 						loggedIn = true;//Set the local boolean loggedIn check to true
@@ -303,7 +309,7 @@ public class Main {
 						System.out.println("Your Primary Key is: " + getPrimaryKey());									
 						
 						//Check if the user has been assigned a game (should be false since this is a new user
-						gameCheck = Game.inGameCheck(pk);
+						gameCheck = gameDAO.inGameCheck(pk);
 						if (gameCheck == false)
 						{												
 							//If user logged in, make the 'Join Game' button available
@@ -324,7 +330,7 @@ public class Main {
 							if (gameCheck == true)
 							{
 								//Check if this user is a valid candidate right off the bat, This may change later
-								candidateCheck = Game.candidateCheck(getPrimaryKey(), getPlayerGame());
+								candidateCheck = gameDAO.candidateCheck(getPrimaryKey(), getPlayerGame());
 								
 								if (candidateCheck == true)
 								{
@@ -337,12 +343,12 @@ public class Main {
 								{
 									//Close the window and return to main menu
 									//hide this candidate panel, for now return to title screen or if election is ready go to election
-									if ((Game.electionSetup(getPlayerGame())==true))
+									if ((gameDAO.electionSetup(getPlayerGame())==true))
 									{
 										Election.setVisible(true);	
 							    		NewUser.setVisible(false);
 									}
-									if((Game.electionSetup(getPlayerGame())==false))
+									if((gameDAO.electionSetup(getPlayerGame())==false))
 									{
 										StartMenu.setVisible(true);	
 							    		NewUser.setVisible(false);
@@ -368,7 +374,7 @@ public class Main {
 			public void actionPerformed(ActionEvent e) {
 				String user = Username_1.getText();
 				String password = Password.getText();				
-				int pk = Game.login(user, password);
+				int pk = gameDAO.login(user, password);
 				boolean gameCheck = false;
                 
 				JLabel lblInvalidUsernameOr = DefaultComponentFactory.getInstance().createLabel("");
@@ -387,9 +393,9 @@ public class Main {
 					setPrimaryKey(pk);
 					loggedIn = true;//Set local loggedIn check to true
 		
-					Game.inGameCount(getPlayerGame());
+					gameDAO.inGameCount(getPlayerGame());
 					//Check if the user has been assigned a game 
-					gameCheck = Game.inGameCheck(pk);
+					gameCheck = gameDAO.inGameCheck(pk);
 					if (gameCheck == false)
 					{												
 						//If user logged in, make the 'Join Game' button available
@@ -465,7 +471,7 @@ public class Main {
 		if((loggedIn == true) && (gameContinued == true))
 		{	
 			//if the election has been set up and this player has not voted, go ahead and populate the candidates
-			if ((Game.electionSetup(getPlayerGame())==true) && ((Game.electionVoteCheck(getPrimaryKey(), getPlayerGame()) == false)))
+			if ((gameDAO.electionSetup(getPlayerGame())==true) && ((gameDAO.electionVoteCheck(getPrimaryKey(), getPlayerGame()) == false)))
 			{									     
 			     electionUpdate();
 			}			
@@ -480,7 +486,7 @@ public class Main {
 		//Ensure this player has logged in and set the game they are in before creating values
 		if((loggedIn == true) && (gameContinued == true))
 		{
-			if (Game.electionSetup(getPlayerGame())==true)
+			if (gameDAO.electionSetup(getPlayerGame())==true)
 			{
 			     resultsUpdate();
 			}
@@ -498,7 +504,7 @@ public class Main {
 		//Ensure this player has logged in 
 		if((loggedIn == true))
 		{					    
-			if (Game.inGameCheck(getPrimaryKey()) == true)
+			if (gameDAO.inGameCheck(getPrimaryKey()) == true)
 			{
 				System.out.print("Entering 466 GUI\n");  
 				//Function to retrieve games player is in, displays in a dropdown menu
@@ -546,6 +552,15 @@ public class Main {
 	//This function updates the candidates panel for a player
 	public void candidatesUpdate()
 	{
+		// Vars ---------------------------------------------------------------------------------------
+		// Obtain DAOFactory.
+	    DAOFactory javabase = DAOFactory.getInstance("game.jdbc");
+	    // Obtain GameDAO.
+	    final GameDAO gameDAO = javabase.getUserDAO();
+		System.out.println("DAOFactory successfully obtained: " + javabase);
+		System.out.println("GameDAO successfully obtained: " + gameDAO);
+
+		
 		//Ensure this player has logged in and set the game they are in before creating values
 		if((loggedIn == true) || (gameContinued == true))
 		{	
@@ -558,11 +573,11 @@ public class Main {
 				public void actionPerformed(ActionEvent arg0) {
 					ans = "Yea";
 					//Call candidate add to store this candidates answer
-					Game.candidateAdd(ans, getPrimaryKey());
+					gameDAO.candidateAdd(ans, getPrimaryKey());
 					//reset ans class variable to null
 					ans = null;
 					//hide this candidate panel, for now return to title screen or if election is ready go to election
-					if ((Game.electionSetup(getPlayerGame())==true))
+					if ((gameDAO.electionSetup(getPlayerGame())==true))
 					{
 						//Update the election board
 						Election.removeAll();						
@@ -573,7 +588,7 @@ public class Main {
 						Election.setVisible(true);	
 			    		Candidate.setVisible(false);
 					}
-					if((Game.electionSetup(getPlayerGame())==false))
+					if((gameDAO.electionSetup(getPlayerGame())==false))
 					{
 						StartMenu.setVisible(true);	
 			    		Candidate.setVisible(false);
@@ -589,11 +604,11 @@ public class Main {
 				public void actionPerformed(ActionEvent e) {
 					ans = "Nay";
 					//Call candidate add to store this candidates answer
-					Game.candidateAdd(ans, getPrimaryKey());
+					gameDAO.candidateAdd(ans, getPrimaryKey());
 					//reset ans class variable to null
 					ans = null;
 					//hide this candidate panel, for now return to title screen or if election is ready go to election
-					if ((Game.electionSetup(getPlayerGame())==true))
+					if ((gameDAO.electionSetup(getPlayerGame())==true))
 					{
 						//Update the election board
 						Election.removeAll();						
@@ -604,7 +619,7 @@ public class Main {
 						Election.setVisible(true);	
 			    		Candidate.setVisible(false);
 					}
-					if((Game.electionSetup(getPlayerGame())==false))
+					if((gameDAO.electionSetup(getPlayerGame())==false))
 					{					
 						StartMenu.setVisible(true);	
 			    		Candidate.setVisible(false);
@@ -632,16 +647,24 @@ public class Main {
 	//This function updates the election candidates for which to vote on
 	public void electionUpdate()
 	{
+		// Vars ---------------------------------------------------------------------------------------
+		// Obtain DAOFactory.
+	    DAOFactory javabase = DAOFactory.getInstance("game.jdbc");
+	    // Obtain GameDAO.
+	    final GameDAO gameDAO = javabase.getUserDAO();
+		System.out.println("DAOFactory successfully obtained: " + javabase);
+		System.out.println("GameDAO successfully obtained: " + gameDAO);
+
 		//Create an array that contains candidate RPs for this game
-		final int []candidatesRP =  Game.getCandidatesRP(getPlayerGame());
+		final Integer[]candidatesRP =  gameDAO.getCandidatesRP(getPlayerGame());
 		//Create an array that contains the candidate usernames for this game
-		final String []candidateUN = Game.getCandidates(getPlayerGame());
+		final String []candidateUN = gameDAO.getCandidates(getPlayerGame());
         
 		//First check to see if this election has completed
-		if (Game.electionFinishedCheck(getPlayerGame()) == false)
+		if (gameDAO.electionFinishedCheck(getPlayerGame()) == false)
 		{
 			//Check to see if this player has already voted
-			if (Game.electionVoteCheck(getPrimaryKey(), getPlayerGame()) == false)
+			if (gameDAO.electionVoteCheck(getPrimaryKey(), getPlayerGame()) == false)
 			{					
 				candidate = candidateUN[0] + " RP: ";
 				final JRadioButton candidate0 = new JRadioButton(candidate + candidatesRP[0]);
@@ -771,13 +794,13 @@ public class Main {
 						}
 					    
 					    //Submit the vote to the database		
-					    Game.elect(vote, getPrimaryKey(), getPlayerGame());
+					    gameDAO.elect(vote, getPrimaryKey(), getPlayerGame());
 					    
 					    //Check if the election is over, if true set results in database table 'player_role' 
-					    if (Game.electionFinishedCheck(getPlayerGame())==true)
+					    if (gameDAO.electionFinishedCheck(getPlayerGame())==true)
 					    {
 					    	//Call the powers setting function
-					    	Game.setPlayerRoles(getPlayerGame());
+					    	gameDAO.setPlayerRoles(getPlayerGame());
 					    	//Go to the winner panel
 					    	Winner.removeAll();						
 							winner();
@@ -789,7 +812,7 @@ public class Main {
 					    }
 					    
 					    //If the election is still running then go to the results page
-					    if (Game.electionFinishedCheck(getPlayerGame())==false)
+					    if (gameDAO.electionFinishedCheck(getPlayerGame())==false)
 					    {
 					    	//Call the powers setting function
 					    	//Update the leader board
@@ -818,7 +841,7 @@ public class Main {
 			}
 			
 			//This player has already voted, take them to election results
-			else if (Game.electionVoteCheck(getPrimaryKey(), getPlayerGame()) == true)
+			else if (gameDAO.electionVoteCheck(getPrimaryKey(), getPlayerGame()) == true)
 			{
 				//Update the leader board
 			    ElectionResults.removeAll();						
@@ -835,7 +858,7 @@ public class Main {
 		}
 		
 		//The election has completed, take this player to the winner page
-		else if (Game.electionFinishedCheck(getPlayerGame())==true)
+		else if (gameDAO.electionFinishedCheck(getPlayerGame())==true)
 		{
 			//Go to the winner panel
 	    	Winner.removeAll();						
@@ -851,8 +874,16 @@ public class Main {
 	//This function sets the results of the running election
 	public void resultsUpdate()
 	{
+		// Vars ---------------------------------------------------------------------------------------
+		// Obtain DAOFactory.
+	    DAOFactory javabase = DAOFactory.getInstance("game.jdbc");
+	    // Obtain GameDAO.
+	    final GameDAO gameDAO = javabase.getUserDAO();
+		System.out.println("DAOFactory successfully obtained: " + javabase);
+		System.out.println("GameDAO successfully obtained: " + gameDAO);
+
 		//Create an array to hold current election results, size 10
-		String[] electionResults = Game.getElectionResults(getPlayerGame());
+		String[] electionResults = gameDAO.getElectionResults(getPlayerGame());
 		
 		JButton btnQuit = new JButton("Quit");
 		btnQuit.setBounds(172, 228, 89, 23);
@@ -933,12 +964,20 @@ public class Main {
 	//This function sets the list of radio buttons to select the game player wants to play after login
 	public void retrieveGames()
 	{
+		// Vars ---------------------------------------------------------------------------------------
+		// Obtain DAOFactory.
+	    DAOFactory javabase = DAOFactory.getInstance("game.jdbc");
+	    // Obtain GameDAO.
+	    final GameDAO gameDAO = javabase.getUserDAO();
+		System.out.println("DAOFactory successfully obtained: " + javabase);
+		System.out.println("GameDAO successfully obtained: " + gameDAO);
+
 		Vector<Integer> pGames = new Vector<Integer>();//use games.size() to get final size of Vector		
 		//Get the vector of games this player is in
-		pGames = Game.getPlayerGames(getPrimaryKey());
+		pGames = gameDAO.getPlayerGames(getPrimaryKey());
 		
 		//Test a method
-		Game.gameStartedCheck(getPlayerGame());
+		gameDAO.gameStartedCheck(getPlayerGame());
 		
 		//This build uses java 1.8.2, will throw an error if using anything below Java 7
 		final JComboBox<Integer> comboBox = new JComboBox<Integer>(pGames);
@@ -973,10 +1012,10 @@ public class Main {
 					//Store this player's candidate decision for this game
 			    	boolean candidateCheck = false;
 					//Check if this user is a valid candidate right off the bat, This may change later
-					candidateCheck = Game.candidateCheck(getPrimaryKey(), getPlayerGame());
+					candidateCheck = gameDAO.candidateCheck(getPrimaryKey(), getPlayerGame());
 					
 			    	//Check to see if this game has started, if so go to candidates (eventually go to current events)
-			    	if (Game.gameStartedCheck(getPlayerGame()) == true)
+			    	if (gameDAO.gameStartedCheck(getPlayerGame()) == true)
 			    	{				    					    					    							
 						//Election not set up, and user is a candidate--go to candidate selection
 						if(candidateCheck == true)
@@ -998,12 +1037,12 @@ public class Main {
 							else if (candidateCheck == false)
 							{								
 								//Election set up, go to election page
-								if ((Game.electionSetup(getPlayerGame())==true))
+								if ((gameDAO.electionSetup(getPlayerGame())==true))
 								{									
 									//Check if election completed, if so go to winner panel									
-									if (Game.electionFinishedCheck(getPlayerGame())==false)
+									if (gameDAO.electionFinishedCheck(getPlayerGame())==false)
 									{
-										if((Game.electionVoteCheck(getPrimaryKey(), getPlayerGame()) == false))
+										if((gameDAO.electionVoteCheck(getPrimaryKey(), getPlayerGame()) == false))
 										{
 											//Update the election panel
 										    Election.removeAll();						
@@ -1016,7 +1055,7 @@ public class Main {
 								    		System.out.println("repainted 950\n");
 										}
 										
-							    		else if ((Game.electionVoteCheck(getPrimaryKey(), getPlayerGame()) == true))
+							    		else if ((gameDAO.electionVoteCheck(getPrimaryKey(), getPlayerGame()) == true))
 							    		{
 								    		//Update the leader board
 										    ElectionResults.removeAll();						
@@ -1032,7 +1071,7 @@ public class Main {
 									}
 									
 									//The election has completed, take this player to the winner page
-									else if (Game.electionFinishedCheck(getPlayerGame())==true)
+									else if (gameDAO.electionFinishedCheck(getPlayerGame())==true)
 									{
 										//Go to the winner panel
 								    	Winner.removeAll();						
@@ -1046,7 +1085,7 @@ public class Main {
 									}
 								}
 								//Election not set up, return to start menu
-								if((Game.electionSetup(getPlayerGame())==false))
+								if((gameDAO.electionSetup(getPlayerGame())==false))
 								{
 									StartMenu.setVisible(true);	
 									GamesDisplay.setVisible(false);
@@ -1060,7 +1099,7 @@ public class Main {
 				    }
 			    	
 			    	//This game has not started, go to StartGame panel
-			    	else if (Game.gameStartedCheck(getPlayerGame()) == false)
+			    	else if (gameDAO.gameStartedCheck(getPlayerGame()) == false)
 			    	{
 			    		//Update StartGame panel
 						StartGame.removeAll();
@@ -1083,9 +1122,17 @@ public class Main {
 	//This function displays a list of games that are available to a player to joing i.e. games that have not started
 	public void joinGame()
 	{
+		// Vars ---------------------------------------------------------------------------------------
+		// Obtain DAOFactory.
+	    DAOFactory javabase = DAOFactory.getInstance("game.jdbc");
+	    // Obtain GameDAO.
+	    final GameDAO gameDAO = javabase.getUserDAO();
+		System.out.println("DAOFactory successfully obtained: " + javabase);
+		System.out.println("GameDAO successfully obtained: " + gameDAO);
+
 		Vector<Integer> pGames = new Vector<Integer>();//use games.size() to get final size of Vector		
 		//Get the vector of games this player is in
-		pGames = Game.getAvailableGames();//Call function that returns games that are available to join
+		pGames = gameDAO.getAvailableGames();//Call function that returns games that are available to join
 		
 		//This build uses java 1.8.2, will throw an error if using anything below Java 7
 		final JComboBox<Integer> comboBox = new JComboBox<Integer>(pGames);
@@ -1105,7 +1152,7 @@ public class Main {
 				int selectedGame = (Integer)comboBox.getSelectedItem();
 				
 				//Add this player to this game
-				Game.addToGame(getPrimaryKey(), selectedGame);
+				gameDAO.addToGame(getPrimaryKey(), selectedGame);
 				
 				//Have them continue in this new game and go to new panel to see this game's status
 				setPlayerGame(selectedGame);//Store the selected game in GUI
@@ -1121,7 +1168,7 @@ public class Main {
 		    	System.out.println("repainted start\n");
 		    	
 		    	//Open the startGame page IF the game has not started, otherwise go to candidate stuff
-		    	if(Game.gameStartedCheck(getPlayerGame()) == false)
+		    	if(gameDAO.gameStartedCheck(getPlayerGame()) == false)
 		    	{
 		    		JoinGame.setVisible(false);	
 		    		StartGame.setVisible(true);
@@ -1129,7 +1176,7 @@ public class Main {
 		    		return;
 		    	}		    	
 			    	//Open the startGame page IF the game has not started, otherwise go to candidate stuff
-			    	else if(Game.gameStartedCheck(getPlayerGame()) == true)
+			    	else if(gameDAO.gameStartedCheck(getPlayerGame()) == true)
 			    	{			    		
 			    		//Update Candidate panel
 				    	Candidate.removeAll();								
@@ -1137,7 +1184,7 @@ public class Main {
 				    	Candidate.repaint();
 
 				    	//if the election has been set up, go ahead and populate the candidates
-						if (Game.electionSetup(getPlayerGame())==true)
+						if (gameDAO.electionSetup(getPlayerGame())==true)
 						{
 							//Update Election panel
 					    	Election.removeAll();	
@@ -1151,7 +1198,7 @@ public class Main {
 						//Go to candidate methods
 						boolean candidateCheck = false;
 						//Check if this user is a valid candidate right off the bat, This may change later
-						candidateCheck = Game.candidateCheck(getPrimaryKey(), getPlayerGame());
+						candidateCheck = gameDAO.candidateCheck(getPrimaryKey(), getPlayerGame());
 						
 						if(candidateCheck == true)
 						{
@@ -1167,14 +1214,14 @@ public class Main {
 								//Close the window, should be logged in now without answering candidacy
 								System.out.println("Your Primary Key is: " + getPrimaryKey());
 								//hide this candidate panel, for now return to title screen or if election is ready go to election
-								if ((Game.electionSetup(getPlayerGame())==true))
+								if ((gameDAO.electionSetup(getPlayerGame())==true))
 								{
 									Election.setVisible(true);	
 						    		JoinGame.setVisible(false);
 						    		
 						    		return;
 								}
-									else if((Game.electionSetup(getPlayerGame())==false))
+									else if((gameDAO.electionSetup(getPlayerGame())==false))
 									{
 										StartMenu.setVisible(true);	
 							    		JoinGame.setVisible(false);
@@ -1193,6 +1240,14 @@ public class Main {
 	//This function also redraws the entire StartGame panel
 	public void startGame()
 	{		
+		// Vars ---------------------------------------------------------------------------------------
+		// Obtain DAOFactory.
+	    DAOFactory javabase = DAOFactory.getInstance("game.jdbc");
+	    // Obtain GameDAO.
+	    final GameDAO gameDAO = javabase.getUserDAO();
+		System.out.println("DAOFactory successfully obtained: " + javabase);
+		System.out.println("GameDAO successfully obtained: " + gameDAO);
+		
 		JLabel lblGameNumber = DefaultComponentFactory.getInstance().createTitle("Game Number:");
 		lblGameNumber.setFont(new Font("Tahoma", Font.BOLD, 18));
 		lblGameNumber.setBounds(64, 11, 162, 14);
@@ -1229,13 +1284,13 @@ public class Main {
 		StartGame.add(lblNumberOfPlayers);
 		
 		//Check to see if at least 10 players are in this game, if so allow a player to start the game
-		if (Game.inGameCount(getPlayerGame()) >= 10)
-		{
+		if (gameDAO.inGameCount(getPlayerGame()) >= 10)
+		{			
 			JButton btnStartGame_1 = new JButton("Start Game!");
 			btnStartGame_1.addMouseListener(new MouseAdapter() {
 				@Override
 				public void mouseClicked(MouseEvent arg0) {
-					Game.startGame(playerGame);
+					gameDAO.startGame(playerGame);
 					
 					//Go to candidate panel					
 					Candidate.removeAll();	
@@ -1256,7 +1311,7 @@ public class Main {
 		JTextArea noPlayers = new JTextArea();
 		noPlayers.setBounds(182, 130, 44, 22);
 		StartGame.add(noPlayers);
-		noPlayers.setText("" + Game.inGameCount(getPlayerGame()));
+		noPlayers.setText("" + gameDAO.inGameCount(getPlayerGame()));
 		
 		JTextArea gameNo = new JTextArea();
 		gameNo.setBounds(214, 9, 51, 22);
@@ -1266,6 +1321,14 @@ public class Main {
 	
 	public void winner()
 	{
+		// Vars ---------------------------------------------------------------------------------------
+		// Obtain DAOFactory.
+	    DAOFactory javabase = DAOFactory.getInstance("game.jdbc");
+	    // Obtain GameDAO. Use this to call instances of the GameDAO NOT Game
+	    GameDAO gameDAO = javabase.getUserDAO();
+		System.out.println("DAOFactory successfully obtained: " + javabase);
+		System.out.println("GameDAO successfully obtained: " + gameDAO);		
+		
 		JLabel lblTheWinnerOf = DefaultComponentFactory.getInstance().createTitle("The Winner of the Election is");
 		lblTheWinnerOf.setFont(new Font("Comic Sans MS", Font.BOLD, 25));
 		lblTheWinnerOf.setBounds(22, 11, 426, 45);
@@ -1287,13 +1350,13 @@ public class Main {
 		
 		if(loggedIn == true)
 		{
-			if (Game.electionFinishedCheck(getPlayerGame()) == true)
+			if (gameDAO.electionFinishedCheck(getPlayerGame()) == true)
 			{
 				textField = new JTextField();
 				textField.setBounds(124, 106, 188, 20);
 				Winner.add(textField);
 				textField.setColumns(10);
-				textField.setText("" + Game.getElectionWinner(getPlayerGame()) + "!");
+				textField.setText("" + gameDAO.getElectionWinner(getPlayerGame()) + "!");
 			}
 		}		
 	}

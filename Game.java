@@ -1,6 +1,6 @@
 import java.sql.Connection;
 import java.sql.Date;
-import java.sql.DriverManager;
+import java.sql.DriverManager;//Used for the external jar driver connection
 import java.sql.ResultSet;
 import java.sql.PreparedStatement;//To connect to the database
 import java.sql.SQLException;
@@ -12,23 +12,22 @@ import java.util.Vector;
 *Function requirements for this class:
 *Statement vs PreparedStatement -- in general go with Prepared Statement (strongly preferred) since it helps prevent SQL injection attacks
 *Class variables: Keep out of this class to keep it like a state machine
-*Sounds like it is best to use  using wrapper datatype objects (Long, Integer, etc.) instead of primitive datatypes (long, int, etc.) is preferred. Consider changing, due to datatypes in sql being able to be null and primitive types in Java cannot be null
+*Parameters in this class should be wrapper datatype objects (Long, Integer, etc.) instead of primitive datatypes (long, int, etc.). Due to datatypes in sql being able to be null and primitive types in Java cannot be null
 *Close DB connections in reverse order as acquired to avoid unexpected errors, this is how to close connections properly
 *it's a good practice to set the database to use the Unicode character encoding UTF-8 by default in the mysql DB
 *Also a good idea to create a new user 'java' to represent java code accesses, and give it a complex password
 *Keep methods non-static to allow for copies of the DAO to be created by the DAOFactory i.e. one copy per thread/GUI out there
+*External jar and DB mysql connections only occur through the DAOFactory
 *@author Russ Mehring
 */
 //DO THIS NEXT
-//**********1/11/2015 Move all DB and Driver connections out of this file and retrieve them from the DAOFactory only, that way unique connections can occur once connection pooling happening
-//THEN change param's set from the DB to be the wrapper object types (Integer instead of int etc.) this prevents null variables in the DB from crashing prog
-//THEN add an error handeling DAO 
+//THEN add an error handling DAO 
 
 //**********Consider making all updates to DB a transaction rather than automatically updating, look at http://tutorials.jenkov.com/jdbc/transaction.html
 //**********Follow Ballus' DAO tutorial to round this thing out, then in the GUI (for now) create instances of the DAO to test, then add connection pool
 //**********Potentially then move the DAO and DB to a server and see if you can connect directly with the GUI, then move on to implementing server class
 public class Game implements GameDAO{	 
-						
+	/*					
 	//Connect to sql JAR file, private to ensure only DAO has access to this data
 	private static void connection()
 	{
@@ -54,7 +53,20 @@ public class Game implements GameDAO{
 		}
 		
 		return connect;
-	}
+	}*/
+	
+	// Vars ---------------------------------------------------------------------------------------
+    private DAOFactory daoFactory;//An instance of DAOFactory
+
+    // Constructors -------------------------------------------------------------------------------
+    /**
+     * Construct a Game DAO for the given DAOFactory. Package private so that it can be constructed
+     * inside the DAO package only.
+     * @param daoFactory The DAOFactory to construct this Game DAO for.
+     */
+    Game(DAOFactory daoFactory) {
+        this.daoFactory = daoFactory;
+    }
 	
 	//Create the new user entry into player table in game database
 	public void createNew (String pk, String username, String password)
@@ -64,12 +76,15 @@ public class Game implements GameDAO{
 		PreparedStatement statement = null;
 		
 		//connect to jar file
-		connection();
+		//connection();
 				
 		try{
 			
 			//connect to the database
-			connect = dbConnection();
+			//connect = dbConnection();
+			
+			//connect to the database and jar file through the DAO Factory
+			connect = daoFactory.getConnection();
 			
 			statement = connect.prepareStatement("INSERT INTO player(_PK_PLAYER, USERNAME, PASSWORD, REPUTATION_POINTS) VALUES (?,?,?,?);");
 			statement.setString(1, pk);
@@ -89,23 +104,26 @@ public class Game implements GameDAO{
 	}
 		
 	//Create a login function to retrieve user data
-	public int login (String username, String password)
+	public Integer login (String username, String password)
 	{
 		//Declare variables
 		String dbUsername = null;
 		String dbPassword = null;
-		int dbPrimarykey = 0;//May need to make this an int
+		Integer dbPrimarykey = 0;
 		PreparedStatement statement = null;
 		ResultSet resultSet = null;
 		Connection connect = null;
 		
 		//Connect to jar file
-		connection();
+		//connection();
 		
 		try
 		{			
 			 //Connect to database
-			 connect = dbConnection();
+			 //connect = dbConnection();
+			
+			 //connect to the database and jar file through the DAO Factory
+			 connect = daoFactory.getConnection();
 			 			 			 
 			 statement = connect.prepareStatement("select * from player;");
 			 resultSet = statement.executeQuery();
@@ -141,18 +159,21 @@ public class Game implements GameDAO{
 	}
 	
 	//Delete user from player table and game database all together
-	public void deleteUser (int pk)
+	public void deleteUser (Integer pk)
 	{
 		//Create variables
 		Connection connect = null;
 		PreparedStatement statement = null;
 		
-		connection();
+		//connection();
 				
 		try{
-			//Creating a variable for the connection called "connect"
 			//connect to the database
-			connect = dbConnection();
+			//connect = dbConnection();
+			
+			//connect to the database and jar file through the DAO Factory
+			connect = daoFactory.getConnection();
+			
 		    statement = connect.prepareStatement("DELETE FROM player WHERE _PK_PLAYER = " + pk);
 			statement.executeUpdate();
 			//Disconnect from the database			
@@ -176,12 +197,16 @@ public class Game implements GameDAO{
 		PreparedStatement statement = null;
 		
 		//connect to jar file
-		connection();
+		//connection();
 				
 		try{
 			
 			//connect to the database
-			connect = dbConnection();
+			//connect = dbConnection();
+			
+			//connect to the database and jar file through the DAO Factory
+			connect = daoFactory.getConnection();
+			
 			//Create a new game
 			statement = connect.prepareStatement("INSERT INTO game (CREATED) values (null);");
 			statement.executeUpdate();
@@ -198,21 +223,24 @@ public class Game implements GameDAO{
 	
 	//This function is used to add a user to a game, sets their initial values across several tables
 	//Prereq: No games can be called 'game 0', this will cause failures--games can be any positive integer, just increment as necessary
-	public void addToGame (int pk, int playerGame)
+	public void addToGame (Integer pk, Integer playerGame)
 	{
-		int game = playerGame;//users game that they wish to join
-		int dbpk = pk;//user's pk
-		int PK_P2G = 0;//This will set the FK player role for this user
+		Integer game = playerGame;//users game that they wish to join
+		Integer dbpk = pk;//user's pk
+		Integer PK_P2G = 0;//This will set the FK player role for this user
 		Connection connect = null;
 		PreparedStatement statement = null; 
 		ResultSet resultSet = null;//For retrieving database data
 				
 		//Connect to jar file
-		connection();
+		//connection();
 												
 		try
 		{
-			 connect = dbConnection();
+			 //connect = dbConnection();
+			
+			 //connect to the database and jar file through the DAO Factory
+			 connect = daoFactory.getConnection();
 			 			 			 
 			 //Go ahead and add them to the candidate list now, that function will sort who is worthy of president there
 			 statement = connect.prepareStatement("INSERT INTO candidates (_FK_PLAYER, _FK_GAME) VALUES (?,?);");	
@@ -257,16 +285,19 @@ public class Game implements GameDAO{
 	
 	//This function starts a game with at least 10 players in it
 	//User Story: the player who created this game can start but no-one else
-	public void startGame(int playerGame) 
+	public void startGame(Integer playerGame) 
 	{
 		Connection connect = null;
 		PreparedStatement statement = null;
 		//Connect to jar file
-		connection();		
+		//connection();		
 				
 		try
 		{
-			connect = dbConnection();//Connect to db
+			//connect = dbConnection();//Connect to db
+			
+			//connect to the database and jar file through the DAO Factory
+			connect = daoFactory.getConnection();
 			
 			//Start the game that this player is currently in
 			statement = connect.prepareStatement("UPDATE game G SET G.STARTED = (?) WHERE G._PK_GAME = " + playerGame + ";");
@@ -284,16 +315,21 @@ public class Game implements GameDAO{
 	}
 							
 	//This function will be called to add a user's response to running for president to the database
-	public void candidateAdd (String ans, int pk)
+	public void candidateAdd (String ans, Integer pk)
 	{
 		PreparedStatement stmnt = null; 
 		Connection connect = null;
 		
 		//Connect to jar file
-		connection();
+		//connection();
+		
 		try
 		{
-			 connect = dbConnection();
+			 //connect = dbConnection();
+			
+			 //connect to the database and jar file through the DAO Factory
+			 connect = daoFactory.getConnection();
+			 
 			 while (!(ans.equals("Yea")) || !((ans.equals("Nay"))))
 			 {
 				 //Add user's response to the Yea column
@@ -326,12 +362,12 @@ public class Game implements GameDAO{
 	}
 	
 	//Sets up election table, if it has already been set up then it skips setup
-	public boolean electionSetup(int playerGame)
+	public Boolean electionSetup(Integer playerGame)
 	{
-		int candidateCounter = 0;//Users who've accepted nomination
-		int userCounter = 0;//To count user in this game in total	
-		int FK_CANDIDATE = 0;//This will set the FK for election table referencing candidates PK
-		int _FK_GAME = 0;
+		Integer candidateCounter = 0;//Users who've accepted nomination
+		Integer userCounter = 0;//To count user in this game in total	
+		Integer FK_CANDIDATE = 0;//This will set the FK for election table referencing candidates PK
+		Integer _FK_GAME = 0;
 		String dbUsername = null;//Used to store each user name from candidates list
 		Connection connect = null;
 		PreparedStatement statement = null;
@@ -339,10 +375,14 @@ public class Game implements GameDAO{
 		ResultSet resultSet = null;
 				
 		//Connect to jar file
-		connection(); 
+		//connection(); 
 		
 		try{
-			   connect = dbConnection();			   
+			   //connect = dbConnection();	
+			 
+			   //connect to the database and jar file through the DAO Factory
+			   connect = daoFactory.getConnection();
+			
 			   //Count the number of candidates who have answered yea in this game
 			   statement = connect.prepareStatement("SELECT COUNT(C.YEA) FROM candidates C, game G WHERE (C._FK_GAME = G._PK_GAME) AND (YEA = 1) AND (G._PK_GAME = " + playerGame +");");
 			   resultSet = statement.executeQuery();
@@ -415,18 +455,22 @@ public class Game implements GameDAO{
 	}
 	
 	//This function sets player's vote for president, players votes are kept in voting_history table
-	public void elect (String vote, int pk, int playerGame)
+	public void elect (String vote, Integer pk, Integer playerGame)
 	{
 		PreparedStatement statement = null;
 		Connection connect = null;
 		
 		//Connect to jar file
-		connection(); 
+		//connection(); 
 		
 		try
 		{			
 			//Connect to the DB
-			connect = dbConnection();
+			//connect = dbConnection();
+
+			//connect to the database and jar file through the DAO Factory
+			connect = daoFactory.getConnection();
+			
 			//NOTE that to send a string for comparison you must encapsulate the string in quotes like: '" + value + "'
 			statement = connect.prepareStatement("UPDATE election E, game G SET E.YEA = E.YEA + (?) WHERE (E.CANDIDATE = '" + vote + "') AND (E._FK_GAME = G._PK_GAME) AND (G._PK_GAME = " + playerGame +");");
 			statement.setInt(1, 1);
@@ -448,18 +492,21 @@ public class Game implements GameDAO{
 	}
 	
 	//This function returns the number of players who are in the game the user is currently in
-	public int inGameCount(int playerGame)
+	public Integer inGameCount(Integer playerGame)
 	{			
-		int playersInGame = 0;	
+		Integer playersInGame = 0;	
 		Connection connect = null;
 		PreparedStatement statement = null;
 		ResultSet resultSet = null;	
 
 		//Connect to jar file
-		connection();
+		//connection();
 		
 		try{	
-			connect = dbConnection();         
+			//connect = dbConnection();
+			
+			//connect to the database and jar file through the DAO Factory
+			connect = daoFactory.getConnection();
 	        	        			
 			//Count the number of candidates in this game
 			statement = connect.prepareStatement("SELECT _FK_GAME FROM player_to_game WHERE _FK_GAME = " + playerGame + ";");	
@@ -487,19 +534,23 @@ public class Game implements GameDAO{
 	}
 	
 	//This function is used to check if a logged in player is in a game, if not ask them to join a game
-	public boolean inGameCheck (int pk)
+	public Boolean inGameCheck (Integer pk)
 	{
-		boolean inGame = false;
+		Boolean inGame = false;
 		Connection connect = null;
 		PreparedStatement statement = null;
 		ResultSet resultSet = null;
 		
 		//Connect to jar file
-		connection();
+		//connection();
 			
 		try
 		{
-			 connect = dbConnection();
+			 //connect = dbConnection();
+			
+			 //connect to the database and jar file through the DAO Factory
+			 connect = daoFactory.getConnection();
+			
 			 statement = connect.prepareStatement("SELECT P._PK_PLAYER, P2G._FK_PLAYER, P2G._FK_GAME FROM player P, player_to_game P2G " +
                                                      "WHERE P._PK_PLAYER = P2G._FK_PLAYER;");			 
 			 //Return the player_to_game table with associated players
@@ -552,17 +603,21 @@ public class Game implements GameDAO{
 	
 	//Check to see if the game this player is actively in has started
 	//***May want to pass in an argument later that will let all games that have started be displayed, not just the one this user is in?
-	public boolean gameStartedCheck(int playerGame)
+	public Boolean gameStartedCheck(Integer playerGame)
 	{
 		Date startTime = null;
 		Connection connect = null;
 		PreparedStatement statement = null;
 		ResultSet resultSet = null;
 		//Connect to jar file
-		connection();
+		//connection();
 		try
 		{
-			connect = dbConnection();//Connect to db						
+			//connect = dbConnection();//Connect to db	
+			
+			//connect to the database and jar file through the DAO Factory
+			connect = daoFactory.getConnection();
+			
 			statement = connect.prepareStatement("SELECT G.STARTED FROM game G WHERE G._PK_GAME = " + playerGame + ";");//Create the statement connection to the DB	
 			resultSet = statement.executeQuery();
 			
@@ -603,24 +658,28 @@ public class Game implements GameDAO{
 	}
 	
 	//while candidate list <= 10 and user rp >= to top candidates and user has not already replied nay to running return true else false
-	public boolean candidateCheck (int pk, int playerGame)
+	public Boolean candidateCheck (Integer pk, Integer playerGame)
 	{
 		//Sort the player list, if user is in top ten for rp's and has not replied y or n extend offer
-		int RP = 0;
-		int candidateCounter = 0;//Users who've accepted nomination
-		int answeredCounter = 0;//Users who've accepted or declined nomination
-		int userCounter = 0;//To count user in this game in total
-		boolean answered = false;
+		Integer RP = 0;
+		Integer candidateCounter = 0;//Users who've accepted nomination
+		Integer answeredCounter = 0;//Users who've accepted or declined nomination
+		Integer userCounter = 0;//To count user in this game in total
+		Boolean answered = false;
 		Connection connect = null;
 		PreparedStatement statement = null;
 		ResultSet resultSet = null;
 						
 		//Connect to jar file
-		connection();
+		//connection();
 		
 		try
 		{
-			 connect = dbConnection();	    			 
+			 //connect = dbConnection();
+			
+			 //connect to the database and jar file through the DAO Factory
+			 connect = daoFactory.getConnection();
+			
 			 //Count the number of candidates in this game
 			 statement = connect.prepareStatement("SELECT COUNT(C.YEA) FROM candidates C, " 
                                                      + "game G WHERE (C.YEA = 1) AND (C._FK_GAME = G._PK_GAME) AND (G._PK_GAME = " + playerGame +");");			 
@@ -712,17 +771,20 @@ public class Game implements GameDAO{
 	}
 	
 	//This function is used to check a new user's userName against the database to make sure their name is unique
-	public boolean userNameCheck(String i)
+	public Boolean userNameCheck(String i)
 	{
 		Connection connect = null;
 		PreparedStatement statement = null;
 		ResultSet resultSet = null;
 		
 		//Connect to jar file
-		connection();
+		//connection();
 		
 		try{
-			connect = dbConnection();
+			//connect = dbConnection();
+			
+			//connect to the database and jar file through the DAO Factory
+			connect = daoFactory.getConnection();
 	 	    
 			//Retrieve username's for checking uniqueness 
 			statement = connect.prepareStatement("SELECT USERNAME FROM player;");
@@ -755,20 +817,24 @@ public class Game implements GameDAO{
 	
 	//This function determines if a player has already cast a vote for this election
 	//returns true if player has already cast their vote, false if not
-	public boolean electionVoteCheck(int pk, int playerGame)
+	public Boolean electionVoteCheck(Integer pk, Integer playerGame)
 	{
-		boolean voted = false;
+		Boolean voted = false;
 		Connection connect = null;
 		PreparedStatement statement = null;
 		ResultSet resultSet = null;
 		
 		//Connect to jar file
-		connection();
+		//connection();
 		
 		try
 		{
 			 //Connect to DB
-			 connect = dbConnection();			 
+			 //connect = dbConnection();	
+			
+			//connect to the database and jar file through the DAO Factory
+			connect = daoFactory.getConnection();
+			
 			 //Pull this player from voting_history
 			 statement = connect.prepareStatement("SELECT ELECTION FROM voting_history V, player_to_game P2G " 
                      + "WHERE (V._FK_P2G = P2G._PK_P2G) AND (P2G._FK_PLAYER = " + pk + ") AND (P2G._FK_GAME = " + playerGame + ");");
@@ -799,19 +865,23 @@ public class Game implements GameDAO{
 	
 	//This function determines if an election has been completed (***Currently just checks if everyone has voted, later add time constraint)
 	//Returns True if election has been completed, False if election is ongoing
-	public boolean electionFinishedCheck(int playerGame)
+	public Boolean electionFinishedCheck(Integer playerGame)
 	{
-	    boolean finished = true;
+	    Boolean finished = true;
 	    Connection connect = null;
 	    PreparedStatement statement = null;
 		ResultSet resultSet = null;
 		
 		//Connect to jar file
-		connection();
+		//connection();
 		
 		try
 		{
-			 connect = dbConnection();			 
+			 //connect = dbConnection();
+			
+			 //connect to the database and jar file through the DAO Factory
+			 connect = daoFactory.getConnection();
+			
 			 //Do a sort on voting_history for this game, check the election column--if any values == 0 then election not completed
 			 statement = connect.prepareStatement("SELECT ELECTION FROM voting_history V, player_to_game P2G " 
                      + "WHERE (V._FK_P2G = P2G._PK_P2G) AND (P2G._FK_GAME = " + playerGame + ");");
@@ -861,12 +931,15 @@ public class Game implements GameDAO{
 		ResultSet resultSet = null;
 		
 		//Connect to jar file
-		connection();
+		//connection();
 		
 		try
 		{
-			 connect = dbConnection();
-			 						 
+			 //connect = dbConnection();
+			 					
+			 //connect to the database and jar file through the DAO Factory
+			 connect = daoFactory.getConnection();
+			
 			 //Return all games from game list that have not started
 		     statement = connect.prepareStatement("SELECT G._PK_GAME from game G WHERE G.STARTED = 0;");
 		     resultSet = statement.executeQuery();
@@ -895,7 +968,7 @@ public class Game implements GameDAO{
 	
 	//Return all games this player is in
 	//Returns a Vector data type
-	public Vector <Integer> getPlayerGames(int pk)
+	public Vector <Integer> getPlayerGames(Integer pk)
 	{
 		//Since the player is in an unknown number of games at program start, use a Vector
 		Vector<Integer> games = new Vector<Integer>();//use games.size() to get final size of Vector	
@@ -904,12 +977,16 @@ public class Game implements GameDAO{
 		ResultSet resultSet = null;
 		
 		//Connect to jar file
-		connection();
+		//connection();
 			
 		try
 		{
 			 //Connect to DB
-			 connect = dbConnection();
+			 //connect = dbConnection();
+			
+			 //connect to the database and jar file through the DAO Factory
+			 connect = daoFactory.getConnection(); 
+			
 			 //Return player_to_game_list						 
 			 statement = connect.prepareStatement("SELECT P._PK_PLAYER, P2G._FK_PLAYER, P2G._FK_GAME FROM player P, player_to_game P2G " +
                                                      "WHERE P._PK_PLAYER = P2G._FK_PLAYER;");
@@ -948,17 +1025,24 @@ public class Game implements GameDAO{
 	
 	//Retrieve candidates reputation points list for this game's election for president
 	//returns an array of size 10 with all RPs 
-	public int[] getCandidatesRP(int playerGame)
+	public Integer[] getCandidatesRP(Integer playerGame)
 	{
-		int j = 0;
-		int[] candidateRP = new int[10];	
+		Integer j = 0;
+		Integer[] candidateRP = new Integer[10];	
 		Connection connect = null;
 		PreparedStatement statement = null;
 		ResultSet result = null;		
 		
+		//Connect to jar file
+		//connection();
+		
 		try{	
 			//Connect to DB
-			connect = dbConnection();
+			//connect = dbConnection();
+			
+			//connect to the database and jar file through the DAO Factory
+			connect = daoFactory.getConnection();
+			
 			//collect the candidates
 			statement = connect.prepareStatement("select P.REPUTATION_POINTS " + 
 			                                  "FROM player P, candidates C, player_to_game P2G, game G WHERE (C._FK_PLAYER = P._PK_PLAYER)" +
@@ -987,19 +1071,22 @@ public class Game implements GameDAO{
 			
 	//Retrieve the candidates list for this games election for president
 	//Returns an array of size 10
-	public String[] getCandidates(int playerGame)
+	public String[] getCandidates(Integer playerGame)
 	{
+		int j;
 		String[] candidateList = new String[10];//Holds candidate list for each game
 		Connection connect = null;
 		PreparedStatement statement = null;
 		ResultSet result = null;
 		
 		//Connect to the database
-		connection();				
-		int j;
-		
+		//connection();				
+				
 		try{	
-			connect = dbConnection();
+			//connect = dbConnection();
+			
+			//connect to the database and jar file through the DAO Factory
+			connect = daoFactory.getConnection();
 
 			//collect the candidates
 			statement = connect.prepareStatement("select E.CANDIDATE " + 
@@ -1033,21 +1120,24 @@ public class Game implements GameDAO{
 	
 	//Retrieve the election results for this specific game
 	//Returns an array of size 10
-	public String[] getElectionResults(int playerGame)
+	public String[] getElectionResults(Integer playerGame)
 	{
 		int j = 0;
-		int votes = 0;
+		Integer votes = 0;
 		String[] electionResults = new String[10];
 		Connection connect = null;
 		PreparedStatement statement = null;
 		ResultSet resultSet = null;	
 		
 		//Connect to the jar file
-		connection();		
+		//connection();		
 						
 		try{				
 			//Connect to the database
-			connect = dbConnection();
+			//connect = dbConnection();
+			
+			//connect to the database and jar file through the DAO Factory
+			connect = daoFactory.getConnection();
 			
 			//collect the candidates
 			statement = connect.prepareStatement("select E.CANDIDATE, E.YEA from election E, game G WHERE (E._FK_GAME = G._PK_GAME) AND (G._PK_GAME = " + playerGame +") ORDER BY E.YEA DESC;");
@@ -1076,7 +1166,7 @@ public class Game implements GameDAO{
 	}
 	
 	//This function returns the election winner for this game
-	public String getElectionWinner(int playerGame)
+	public String getElectionWinner(Integer playerGame)
 	{
 		String winner = null;
 		Connection connect = null;
@@ -1084,11 +1174,14 @@ public class Game implements GameDAO{
 		ResultSet resultSet = null;	
 		
 		//Connect to the jar file
-		connection();		
+		//connection();		
 						
 		try{				
 			//Connect to the database
-			connect = dbConnection();
+			//connect = dbConnection();
+			
+			//connect to the database and jar file through the DAO Factory
+			connect = daoFactory.getConnection();
 			
 			//collect the candidates
 			statement = connect.prepareStatement("select E.CANDIDATE, E.YEA from election E, game G WHERE (E._FK_GAME = G._PK_GAME) AND (G._PK_GAME = " + playerGame +") ORDER BY E.YEA DESC LIMIT 1;");
@@ -1113,20 +1206,23 @@ public class Game implements GameDAO{
 	//This function sets all player roles for this game (President or Senator)
 	//Call this function after an election has been completed
 	//***Maybe just call this function inside an election completed boolean function in this class?
-	public void setPlayerRoles(int playerGame)
+	public void setPlayerRoles(Integer playerGame)
 	{
 		//Function variables
-		int P2G_PK = 0;
+		Integer P2G_PK = 0;
 		Connection connect = null;
 		PreparedStatement statement = null;
 		ResultSet result = null;
 		
 		//Connect to the jar file
-		connection();
+		//connection();
 		
 		try{				
 			//Connect to the database
-			connect = dbConnection();
+			//connect = dbConnection();
+			
+			//connect to the database and jar file through the DAO Factory
+			connect = daoFactory.getConnection();
 						
 			//First set president for this game
 			statement = connect.prepareStatement("SELECT P2G._PK_P2G, E.YEA, E.CANDIDATE from election E, player_to_game P2G, candidates C, player P WHERE " + 

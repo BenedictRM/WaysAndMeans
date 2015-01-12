@@ -131,7 +131,7 @@ public abstract class DAOFactory {
      */
     public GameDAO getUserDAO() {
         //Return an instance of the Game DAO
-    	return new Game();
+    	return new Game(this);
     }
 
     // You can add more DAO implementation getters here.
