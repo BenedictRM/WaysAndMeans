@@ -51,19 +51,31 @@ public class Main {
   	private boolean gameContinued;
   	private int playerGame;//stores the game number player has continued/ joined
   	private JTextField textField;
-  	
+  	private Game Game = new Game();//Delete later, just accessing GameDAO directly right now
+   
+    
 	/**
 	 * Launch the application.
 	 */
 	public static void main(String[] args) {
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
-				try {				
+				try {				                															
+					//Just some test stuff
+					// Obtain DAOFactory.
+				    DAOFactory javabase = DAOFactory.getInstance("game.jdbc");
+				    // Obtain GameDAO.
+				    GameDAO gameDAO = javabase.getUserDAO();
+					System.out.println("DAOFactory successfully obtained: " + javabase);
+					System.out.println("UserDAO successfully obtained: " + gameDAO);
+					//End test stuff
+					
 					Main window = new Main();
 					window.frame.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
+				
 			}
 		});
 	}
@@ -84,7 +96,7 @@ public class Main {
 	/**
 	 * Initialize the contents of the frame.
 	 */
-	private void initialize() {
+	private void initialize() {				
 		frame = new JFrame();
 		frame.setBounds(100, 100, 450, 300);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

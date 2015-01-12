@@ -10,14 +10,24 @@ import java.util.Vector;
 *API Documentation (in progress)
 
 *Function requirements for this class:
-*Statement vs PreparedStatement -- in general go with Prepared Statement since it helps prevent SQL injection attacks
+*Statement vs PreparedStatement -- in general go with Prepared Statement (strongly preferred) since it helps prevent SQL injection attacks
 *Class variables: Keep out of this class to keep it like a state machine
 *Sounds like it is best to use  using wrapper datatype objects (Long, Integer, etc.) instead of primitive datatypes (long, int, etc.) is preferred. Consider changing, due to datatypes in sql being able to be null and primitive types in Java cannot be null
-*Close DB connections in reverse order as aquired to avoid unexpected errors
+*Close DB connections in reverse order as acquired to avoid unexpected errors, this is how to close connections properly
+*it's a good practice to set the database to use the Unicode character encoding UTF-8 by default in the mysql DB
+*Also a good idea to create a new user 'java' to represent java code accesses, and give it a complex password
+*Keep methods non-static to allow for copies of the DAO to be created by the DAOFactory i.e. one copy per thread/GUI out there
 *@author Russ Mehring
 */
+//DO THIS NEXT
+//**********1/11/2015 Move all DB and Driver connections out of this file and retrieve them from the DAOFactory only, that way unique connections can occur once connection pooling happening
+//THEN change param's set from the DB to be the wrapper object types (Integer instead of int etc.) this prevents null variables in the DB from crashing prog
+//THEN add an error handeling DAO 
 
-public class Game {	 
+//**********Consider making all updates to DB a transaction rather than automatically updating, look at http://tutorials.jenkov.com/jdbc/transaction.html
+//**********Follow Ballus' DAO tutorial to round this thing out, then in the GUI (for now) create instances of the DAO to test, then add connection pool
+//**********Potentially then move the DAO and DB to a server and see if you can connect directly with the GUI, then move on to implementing server class
+public class Game implements GameDAO{	 
 						
 	//Connect to sql JAR file, private to ensure only DAO has access to this data
 	private static void connection()
@@ -47,7 +57,7 @@ public class Game {
 	}
 	
 	//Create the new user entry into player table in game database
-	public static void createNew (String pk, String username, String password)
+	public void createNew (String pk, String username, String password)
 	{
 		//Declare variables
 		Connection connect = null;		
@@ -79,7 +89,7 @@ public class Game {
 	}
 		
 	//Create a login function to retrieve user data
-	public static int login (String username, String password)
+	public int login (String username, String password)
 	{
 		//Declare variables
 		String dbUsername = null;
@@ -131,7 +141,7 @@ public class Game {
 	}
 	
 	//Delete user from player table and game database all together
-	public static void deleteUser (int pk)
+	public void deleteUser (int pk)
 	{
 		//Create variables
 		Connection connect = null;
@@ -159,7 +169,7 @@ public class Game {
 	//This function creates a new game in the database table 'game' that users can now join and play
 	//***Suggestion--let user input the 'title' of their game (include a string size check!!!) that lets them identify their game more easily
 	//**Maybe also add a 'created by' field to let them see that they themselves are the 'owner' of that game
-	public static void createGame()
+	public void createGame()
 	{	
 		//Declare variables
 		Connection connect = null;		
@@ -188,7 +198,7 @@ public class Game {
 	
 	//This function is used to add a user to a game, sets their initial values across several tables
 	//Prereq: No games can be called 'game 0', this will cause failures--games can be any positive integer, just increment as necessary
-	public static void addToGame (int pk, int playerGame)
+	public void addToGame (int pk, int playerGame)
 	{
 		int game = playerGame;//users game that they wish to join
 		int dbpk = pk;//user's pk
@@ -247,7 +257,7 @@ public class Game {
 	
 	//This function starts a game with at least 10 players in it
 	//User Story: the player who created this game can start but no-one else
-	public static void startGame(int playerGame) 
+	public void startGame(int playerGame) 
 	{
 		Connection connect = null;
 		PreparedStatement statement = null;
@@ -274,7 +284,7 @@ public class Game {
 	}
 							
 	//This function will be called to add a user's response to running for president to the database
-	public static void candidateAdd (String ans, int pk)
+	public void candidateAdd (String ans, int pk)
 	{
 		PreparedStatement stmnt = null; 
 		Connection connect = null;
@@ -316,7 +326,7 @@ public class Game {
 	}
 	
 	//Sets up election table, if it has already been set up then it skips setup
-	public static boolean electionSetup(int playerGame)
+	public boolean electionSetup(int playerGame)
 	{
 		int candidateCounter = 0;//Users who've accepted nomination
 		int userCounter = 0;//To count user in this game in total	
@@ -405,7 +415,7 @@ public class Game {
 	}
 	
 	//This function sets player's vote for president, players votes are kept in voting_history table
-	public static void elect (String vote, int pk, int playerGame)
+	public void elect (String vote, int pk, int playerGame)
 	{
 		PreparedStatement statement = null;
 		Connection connect = null;
@@ -438,7 +448,7 @@ public class Game {
 	}
 	
 	//This function returns the number of players who are in the game the user is currently in
-	public static int inGameCount(int playerGame)
+	public int inGameCount(int playerGame)
 	{			
 		int playersInGame = 0;	
 		Connection connect = null;
@@ -477,7 +487,7 @@ public class Game {
 	}
 	
 	//This function is used to check if a logged in player is in a game, if not ask them to join a game
-	public static boolean inGameCheck (int pk)
+	public boolean inGameCheck (int pk)
 	{
 		boolean inGame = false;
 		Connection connect = null;
@@ -542,7 +552,7 @@ public class Game {
 	
 	//Check to see if the game this player is actively in has started
 	//***May want to pass in an argument later that will let all games that have started be displayed, not just the one this user is in?
-	public static boolean gameStartedCheck(int playerGame)
+	public boolean gameStartedCheck(int playerGame)
 	{
 		Date startTime = null;
 		Connection connect = null;
@@ -593,7 +603,7 @@ public class Game {
 	}
 	
 	//while candidate list <= 10 and user rp >= to top candidates and user has not already replied nay to running return true else false
-	public static boolean candidateCheck (int pk, int playerGame)
+	public boolean candidateCheck (int pk, int playerGame)
 	{
 		//Sort the player list, if user is in top ten for rp's and has not replied y or n extend offer
 		int RP = 0;
@@ -702,7 +712,7 @@ public class Game {
 	}
 	
 	//This function is used to check a new user's userName against the database to make sure their name is unique
-	public static boolean userNameCheck(String i)
+	public boolean userNameCheck(String i)
 	{
 		Connection connect = null;
 		PreparedStatement statement = null;
@@ -745,7 +755,7 @@ public class Game {
 	
 	//This function determines if a player has already cast a vote for this election
 	//returns true if player has already cast their vote, false if not
-	public static boolean electionVoteCheck(int pk, int playerGame)
+	public boolean electionVoteCheck(int pk, int playerGame)
 	{
 		boolean voted = false;
 		Connection connect = null;
@@ -789,7 +799,7 @@ public class Game {
 	
 	//This function determines if an election has been completed (***Currently just checks if everyone has voted, later add time constraint)
 	//Returns True if election has been completed, False if election is ongoing
-	public static boolean electionFinishedCheck(int playerGame)
+	public boolean electionFinishedCheck(int playerGame)
 	{
 	    boolean finished = true;
 	    Connection connect = null;
@@ -842,7 +852,7 @@ public class Game {
 	
 	//This function returns a Vector of available games for a player to join 
 	//Prereq: The games added to this vector cannot have already started
-	public static Vector <Integer> getAvailableGames()
+	public Vector <Integer> getAvailableGames()
 	{
 		//Since the there is in an unknown number of games at program start, use a Vector
 		Vector<Integer> games = new Vector<Integer>();//use games.size() to get final size of Vector	
@@ -885,7 +895,7 @@ public class Game {
 	
 	//Return all games this player is in
 	//Returns a Vector data type
-	public static Vector <Integer> getPlayerGames(int pk)
+	public Vector <Integer> getPlayerGames(int pk)
 	{
 		//Since the player is in an unknown number of games at program start, use a Vector
 		Vector<Integer> games = new Vector<Integer>();//use games.size() to get final size of Vector	
@@ -938,7 +948,7 @@ public class Game {
 	
 	//Retrieve candidates reputation points list for this game's election for president
 	//returns an array of size 10 with all RPs 
-	public static int[] getCandidatesRP(int playerGame)
+	public int[] getCandidatesRP(int playerGame)
 	{
 		int j = 0;
 		int[] candidateRP = new int[10];	
@@ -977,7 +987,7 @@ public class Game {
 			
 	//Retrieve the candidates list for this games election for president
 	//Returns an array of size 10
-	public static String[] getCandidates(int playerGame)
+	public String[] getCandidates(int playerGame)
 	{
 		String[] candidateList = new String[10];//Holds candidate list for each game
 		Connection connect = null;
@@ -1023,7 +1033,7 @@ public class Game {
 	
 	//Retrieve the election results for this specific game
 	//Returns an array of size 10
-	public static String[] getElectionResults(int playerGame)
+	public String[] getElectionResults(int playerGame)
 	{
 		int j = 0;
 		int votes = 0;
@@ -1066,7 +1076,7 @@ public class Game {
 	}
 	
 	//This function returns the election winner for this game
-	public static String getElectionWinner(int playerGame)
+	public String getElectionWinner(int playerGame)
 	{
 		String winner = null;
 		Connection connect = null;
@@ -1103,7 +1113,7 @@ public class Game {
 	//This function sets all player roles for this game (President or Senator)
 	//Call this function after an election has been completed
 	//***Maybe just call this function inside an election completed boolean function in this class?
-	public static void setPlayerRoles(int playerGame)
+	public void setPlayerRoles(int playerGame)
 	{
 		//Function variables
 		int P2G_PK = 0;
