@@ -130,8 +130,8 @@ public abstract class DAOFactory {
      * @return The Game DAO associated with the current DAOFactory.
      */
     public GameDAO getUserDAO() {
-        //Return an instance of the Game DAO
-    	return new Game(this);
+        //Return an instance of the Game DAO (should be unique)
+    	return new GameDAOJDBC(this);
     }
 
     // You can add more DAO implementation getters here.
@@ -156,6 +156,7 @@ class DriverManagerDAOFactory extends DAOFactory {
 
     @Override
     Connection getConnection() throws SQLException {
+    	//Call the mysql link
         return DriverManager.getConnection(url, username, password);
     }
 }
