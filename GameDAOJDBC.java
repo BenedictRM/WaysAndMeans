@@ -21,7 +21,8 @@ import java.util.Vector;
 *@author Russ Mehring
 */
 //DO THIS NEXT
-//THEN add an error handling DAO 
+//close() calls in DAOFactory or are we already doing this correctly? ***move the closing statements into a finally block AFTER catch blocks, for closing the connection add a connection closing method to the DAO manager to close the connection maybe?
+//Connection pool-- is it included with Apache Tomcat? Or do we need to implement our own?
 
 //**********Consider making all updates to DB a transaction rather than automatically updating, look at http://tutorials.jenkov.com/jdbc/transaction.html
 //**********Follow Ballus' DAO tutorial to round this thing out, then in the GUI (for now) create instances of the DAO to test, then add connection pool
@@ -67,18 +68,21 @@ public class GameDAOJDBC implements GameDAO{
     GameDAOJDBC(DAOFactory daoFactory) {
         this.daoFactory = daoFactory;
     }
-	
-	//Create the new user entry into player table in game database
-	public void createNew (String pk, String username, String password)
+    
+    // Actions ------------------------------------------------------------------------------------   
+	/**
+	 * Create the new user entry into player table in game database
+	 */
+	public void createNew (String pk, String username, String password) throws DAOException
 	{
 		//Declare variables
 		Connection connect = null;		
 		PreparedStatement statement = null;
 		
 		//connect to jar file
-		//connection();
-				
-		try{
+		//connection();				
+		try
+		{
 			
 			//connect to the database
 			//connect = dbConnection();
@@ -91,29 +95,43 @@ public class GameDAOJDBC implements GameDAO{
 			statement.setString(2, username);
 			statement.setString(3, password);
 			statement.setInt(4, 50);
-			statement.executeUpdate();
-								
-			//Disconnect from the database
-			statement.close();
-			connect.close();		
+			statement.executeUpdate();													
 		}
 		
-		catch(SQLException o){
-			o.printStackTrace();
+		catch(SQLException o)
+		{
+			throw new DAOException(o);
 		}
+		
+		//Finally blocks ALWAYS execute (even if try block exited abnormally)
+		//Ensure Disconnection from database
+		finally
+		{
+			//Disconnect from the database
+			try 
+			{
+				statement.close();
+				connect.close();
+			} 
+			
+			catch (SQLException e) 
+			{
+				throw new DAOException(e);
+			}			
+		}				
 	}
 		
 	//Create a login function to retrieve user data
-	public Integer login (String username, String password)
+	public Integer login (String username, String password) throws DAOException
 	{
 		//Declare variables
 		String dbUsername = null;
 		String dbPassword = null;
 		Integer dbPrimarykey = 0;
+		Connection connect = null;
 		PreparedStatement statement = null;
 		ResultSet resultSet = null;
-		Connection connect = null;
-		
+				
 		//Connect to jar file
 		//connection();
 		
@@ -143,23 +161,22 @@ public class GameDAOJDBC implements GameDAO{
 			        }
 			 }
 			 
-			//Disconnect from the database			 
-			statement.close();
-			resultSet.close(); 
+			//Disconnect from the database in reverse order of acquired			 			
+			statement.close();			 
+			resultSet.close();
 			connect.close();
 		     
-			 return dbPrimarykey;
+			return dbPrimarykey;
 		}
 	
 		catch(SQLException o)
 		{
-			o.printStackTrace();
-			return 0;
+			throw new DAOException(o);
 		}
 	}
 	
 	//Delete user from player table and game database all together
-	public void deleteUser (Integer pk)
+	public void deleteUser (Integer pk) throws DAOException
 	{
 		//Create variables
 		Connection connect = null;
@@ -167,7 +184,8 @@ public class GameDAOJDBC implements GameDAO{
 		
 		//connection();
 				
-		try{
+		try
+		{
 			//connect to the database
 			//connect = dbConnection();
 			
@@ -176,13 +194,15 @@ public class GameDAOJDBC implements GameDAO{
 			
 		    statement = connect.prepareStatement("DELETE FROM player WHERE _PK_PLAYER = " + pk);
 			statement.executeUpdate();
+			
 			//Disconnect from the database			
 			statement.close();	
 			connect.close();
 		}
 		
-		catch(SQLException o){
-			o.printStackTrace();
+		catch(SQLException o)
+		{
+			throw new DAOException(o);
 		}
 		System.out.println("Your profile has now been deleted from the database");
 	}
@@ -190,7 +210,7 @@ public class GameDAOJDBC implements GameDAO{
 	//This function creates a new game in the database table 'game' that users can now join and play
 	//***Suggestion--let user input the 'title' of their game (include a string size check!!!) that lets them identify their game more easily
 	//**Maybe also add a 'created by' field to let them see that they themselves are the 'owner' of that game
-	public void createGame()
+	public void createGame() throws DAOException
 	{	
 		//Declare variables
 		Connection connect = null;		
@@ -199,7 +219,8 @@ public class GameDAOJDBC implements GameDAO{
 		//connect to jar file
 		//connection();
 				
-		try{
+		try
+		{
 			
 			//connect to the database
 			//connect = dbConnection();
@@ -216,14 +237,15 @@ public class GameDAOJDBC implements GameDAO{
 			connect.close();
 		}
 		
-		catch(SQLException o){
-			o.printStackTrace();
+		catch(SQLException o)
+		{
+			throw new DAOException(o);
 		}		
 	}
 	
 	//This function is used to add a user to a game, sets their initial values across several tables
 	//Prereq: No games can be called 'game 0', this will cause failures--games can be any positive integer, just increment as necessary
-	public void addToGame (Integer pk, Integer playerGame)
+	public void addToGame (Integer pk, Integer playerGame) throws DAOException
 	{
 		Integer game = playerGame;//users game that they wish to join
 		Integer dbpk = pk;//user's pk
@@ -277,7 +299,7 @@ public class GameDAOJDBC implements GameDAO{
 		}
 			catch(SQLException o)
 			{				
-				o.printStackTrace();
+				throw new DAOException(o);
 			}
 		
 		return;
@@ -285,7 +307,7 @@ public class GameDAOJDBC implements GameDAO{
 	
 	//This function starts a game with at least 10 players in it
 	//User Story: the player who created this game can start but no-one else
-	public void startGame(Integer playerGame) 
+	public void startGame(Integer playerGame) throws DAOException
 	{
 		Connection connect = null;
 		PreparedStatement statement = null;
@@ -310,15 +332,15 @@ public class GameDAOJDBC implements GameDAO{
 		}
 		catch(SQLException o)
 		{
-			o.printStackTrace();
+			throw new DAOException(o);
 		}			
 	}
 							
 	//This function will be called to add a user's response to running for president to the database
-	public void candidateAdd (String ans, Integer pk)
+	public void candidateAdd (String ans, Integer pk) throws DAOException
 	{
-		PreparedStatement stmnt = null; 
 		Connection connect = null;
+		PreparedStatement stmnt = null; 		
 		
 		//Connect to jar file
 		//connection();
@@ -357,12 +379,12 @@ public class GameDAOJDBC implements GameDAO{
 		
 		catch(SQLException o)
 		{
-			o.printStackTrace();
+			throw new DAOException(o);
 		}
 	}
 	
 	//Sets up election table, if it has already been set up then it skips setup
-	public Boolean electionSetup(Integer playerGame)
+	public Boolean electionSetup(Integer playerGame) throws DAOException
 	{
 		Integer candidateCounter = 0;//Users who've accepted nomination
 		Integer userCounter = 0;//To count user in this game in total	
@@ -448,17 +470,17 @@ public class GameDAOJDBC implements GameDAO{
 		}
 		catch(SQLException o)
 		{
-			o.printStackTrace();
+			throw new DAOException(o);
 		}
 		//The election table is empty, no vote yet
 		return false;
 	}
 	
 	//This function sets player's vote for president, players votes are kept in voting_history table
-	public void elect (String vote, Integer pk, Integer playerGame)
+	public void elect (String vote, Integer pk, Integer playerGame) throws DAOException
 	{
-		PreparedStatement statement = null;
 		Connection connect = null;
+		PreparedStatement statement = null;		
 		
 		//Connect to jar file
 		//connection(); 
@@ -487,12 +509,12 @@ public class GameDAOJDBC implements GameDAO{
 		
 		catch(SQLException o)
 		{
-			o.printStackTrace();
+			throw new DAOException(o);
 		}
 	}
 	
 	//This function returns the number of players who are in the game the user is currently in
-	public Integer inGameCount(Integer playerGame)
+	public Integer inGameCount(Integer playerGame) throws DAOException
 	{			
 		Integer playersInGame = 0;	
 		Connection connect = null;
@@ -502,7 +524,8 @@ public class GameDAOJDBC implements GameDAO{
 		//Connect to jar file
 		//connection();
 		
-		try{	
+		try
+		{	
 			//connect = dbConnection();
 			
 			//connect to the database and jar file through the DAO Factory
@@ -522,19 +545,16 @@ public class GameDAOJDBC implements GameDAO{
 		    connect.close();
 		    
 		    return playersInGame;		
-	    }
-		
+	    }		
 		//Catch any errors	
 		catch(SQLException o)
 		{
-			o.printStackTrace();
+			throw new DAOException(o);
 		}
-		
-		return playersInGame;
 	}
 	
 	//This function is used to check if a logged in player is in a game, if not ask them to join a game
-	public Boolean inGameCheck (Integer pk)
+	public Boolean inGameCheck (Integer pk) throws DAOException
 	{
 		Boolean inGame = false;
 		Connection connect = null;
@@ -595,7 +615,7 @@ public class GameDAOJDBC implements GameDAO{
 		
 		catch(SQLException o)
 		{				
-			o.printStackTrace();
+			throw new DAOException(o);
 		}
 		//Player not found, can't be in game (this will be the default return)
 		return inGame;
@@ -603,7 +623,7 @@ public class GameDAOJDBC implements GameDAO{
 	
 	//Check to see if the game this player is actively in has started
 	//***May want to pass in an argument later that will let all games that have started be displayed, not just the one this user is in?
-	public Boolean gameStartedCheck(Integer playerGame)
+	public Boolean gameStartedCheck(Integer playerGame) throws DAOException
 	{
 		Date startTime = null;
 		Connection connect = null;
@@ -651,14 +671,12 @@ public class GameDAOJDBC implements GameDAO{
 		}
 		catch(SQLException o)
 		{
-			o.printStackTrace();
+			throw new DAOException(o);
 		}
-		//Default return false -- most likely game can still be joined		
-		return false;
 	}
 	
 	//while candidate list <= 10 and user rp >= to top candidates and user has not already replied nay to running return true else false
-	public Boolean candidateCheck (Integer pk, Integer playerGame)
+	public Boolean candidateCheck (Integer pk, Integer playerGame) throws DAOException
 	{
 		//Sort the player list, if user is in top ten for rp's and has not replied y or n extend offer
 		Integer RP = 0;
@@ -764,14 +782,14 @@ public class GameDAOJDBC implements GameDAO{
 		}
 		catch(SQLException o)
 		{
-			o.printStackTrace();
+			throw new DAOException(o);
 		}
 		//Default return, don't risk adding candidates in case an error happens that sends the code here
 		return false;
 	}
 	
 	//This function is used to check a new user's userName against the database to make sure their name is unique
-	public Boolean userNameCheck(String i)
+	public Boolean userNameCheck(String user) throws DAOException
 	{
 		Connection connect = null;
 		PreparedStatement statement = null;
@@ -793,7 +811,7 @@ public class GameDAOJDBC implements GameDAO{
 	        //Check the database user names against this user name
 	        while (resultSet.next())
 	        {
-	        	if(resultSet.getString(1).equals(i))
+	        	if(resultSet.getString(1).equals(user))
 	        	{
 	        		//Disconnect from the database
 	    		    connect.close();
@@ -810,14 +828,13 @@ public class GameDAOJDBC implements GameDAO{
 		
 		catch(SQLException o)
 		{
-			o.printStackTrace();
+			throw new DAOException(o);
 		}
-		return false;
 	}
 	
 	//This function determines if a player has already cast a vote for this election
 	//returns true if player has already cast their vote, false if not
-	public Boolean electionVoteCheck(Integer pk, Integer playerGame)
+	public Boolean electionVoteCheck(Integer pk, Integer playerGame) throws DAOException
 	{
 		Boolean voted = false;
 		Connection connect = null;
@@ -856,7 +873,7 @@ public class GameDAOJDBC implements GameDAO{
 		
 		catch(SQLException o)
 		{
-			o.printStackTrace();
+			throw new DAOException(o);
 		}
 		
 		//Default is false
@@ -865,7 +882,7 @@ public class GameDAOJDBC implements GameDAO{
 	
 	//This function determines if an election has been completed (***Currently just checks if everyone has voted, later add time constraint)
 	//Returns True if election has been completed, False if election is ongoing
-	public Boolean electionFinishedCheck(Integer playerGame)
+	public Boolean electionFinishedCheck(Integer playerGame) throws DAOException
 	{
 	    Boolean finished = true;
 	    Connection connect = null;
@@ -913,7 +930,7 @@ public class GameDAOJDBC implements GameDAO{
 		
 		catch(SQLException o)
 		{
-			o.printStackTrace();
+			throw new DAOException(o);
 		}
 	    	    
 		//Default is True 
@@ -922,7 +939,7 @@ public class GameDAOJDBC implements GameDAO{
 	
 	//This function returns a Vector of available games for a player to join 
 	//Prereq: The games added to this vector cannot have already started
-	public Vector <Integer> getAvailableGames()
+	public Vector <Integer> getAvailableGames() throws DAOException
 	{
 		//Since the there is in an unknown number of games at program start, use a Vector
 		Vector<Integer> games = new Vector<Integer>();//use games.size() to get final size of Vector	
@@ -960,7 +977,7 @@ public class GameDAOJDBC implements GameDAO{
 		
 			catch(SQLException o)
 			{				
-				o.printStackTrace();
+				throw new DAOException(o);
 			}
 		//Return the vector of available games
 		return games;
@@ -968,7 +985,7 @@ public class GameDAOJDBC implements GameDAO{
 	
 	//Return all games this player is in
 	//Returns a Vector data type
-	public Vector <Integer> getPlayerGames(Integer pk)
+	public Vector <Integer> getPlayerGames(Integer pk) throws DAOException
 	{
 		//Since the player is in an unknown number of games at program start, use a Vector
 		Vector<Integer> games = new Vector<Integer>();//use games.size() to get final size of Vector	
@@ -1017,7 +1034,7 @@ public class GameDAOJDBC implements GameDAO{
 		
 			catch(SQLException o)
 			{				
-				o.printStackTrace();
+				throw new DAOException(o);
 			}
 				
 		return games;		
@@ -1025,7 +1042,7 @@ public class GameDAOJDBC implements GameDAO{
 	
 	//Retrieve candidates reputation points list for this game's election for president
 	//returns an array of size 10 with all RPs 
-	public Integer[] getCandidatesRP(Integer playerGame)
+	public Integer[] getCandidatesRP(Integer playerGame) throws DAOException
 	{
 		Integer j = 0;
 		Integer[] candidateRP = new Integer[10];	
@@ -1063,7 +1080,7 @@ public class GameDAOJDBC implements GameDAO{
 		}
 		catch(SQLException o)
 		{
-			o.printStackTrace();
+			throw new DAOException(o);
 		}
 		
 		return candidateRP;
@@ -1071,7 +1088,7 @@ public class GameDAOJDBC implements GameDAO{
 			
 	//Retrieve the candidates list for this games election for president
 	//Returns an array of size 10
-	public String[] getCandidates(Integer playerGame)
+	public String[] getCandidates(Integer playerGame) throws DAOException
 	{
 		int j;
 		String[] candidateList = new String[10];//Holds candidate list for each game
@@ -1112,7 +1129,7 @@ public class GameDAOJDBC implements GameDAO{
 		}
 		catch(SQLException o)
 		{
-			o.printStackTrace();
+			throw new DAOException(o);
 		}
 		
 		return candidateList;
@@ -1120,7 +1137,7 @@ public class GameDAOJDBC implements GameDAO{
 	
 	//Retrieve the election results for this specific game
 	//Returns an array of size 10
-	public String[] getElectionResults(Integer playerGame)
+	public String[] getElectionResults(Integer playerGame) throws DAOException
 	{
 		int j = 0;
 		Integer votes = 0;
@@ -1159,14 +1176,14 @@ public class GameDAOJDBC implements GameDAO{
 		}
 		catch(SQLException o)
 		{
-			o.printStackTrace();
+			throw new DAOException(o);
 		}
 		
 		return electionResults;
 	}
 	
 	//This function returns the election winner for this game
-	public String getElectionWinner(Integer playerGame)
+	public String getElectionWinner(Integer playerGame) throws DAOException
 	{
 		String winner = null;
 		Connection connect = null;
@@ -1197,7 +1214,7 @@ public class GameDAOJDBC implements GameDAO{
 		}
 		catch(SQLException o)
 		{
-			o.printStackTrace();
+			throw new DAOException(o);
 		}
 		
 		return winner;
@@ -1206,7 +1223,7 @@ public class GameDAOJDBC implements GameDAO{
 	//This function sets all player roles for this game (President or Senator)
 	//Call this function after an election has been completed
 	//***Maybe just call this function inside an election completed boolean function in this class?
-	public void setPlayerRoles(Integer playerGame)
+	public void setPlayerRoles(Integer playerGame) throws DAOException
 	{
 		//Function variables
 		Integer P2G_PK = 0;
@@ -1252,7 +1269,7 @@ public class GameDAOJDBC implements GameDAO{
 		}
 		catch(SQLException o)
 		{
-			o.printStackTrace();
+			throw new DAOException(o);
 		}
 	}
 }	
