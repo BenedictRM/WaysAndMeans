@@ -52,7 +52,7 @@ public interface GameDAO {
 	 * @param ans
 	 * @param pk
 	 */
-	public void candidateAdd (String ans, Integer pk) throws DAOException;;
+	public void candidateAdd (String ans, Integer pk, Integer playerGame) throws DAOException;;
 	
 	/**
 	 * Sets up election table, if it has already been set up then it skips setup

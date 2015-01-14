@@ -98,26 +98,26 @@ public class GameDAOJDBC implements GameDAO{
 			statement.executeUpdate();													
 		}
 		
-		catch(SQLException o)
-		{
-			throw new DAOException(o);
-		}
+			catch(SQLException o)
+			{
+				throw new DAOException(o);
+			}
 		
 		//Finally blocks ALWAYS execute (even if try block exited abnormally)
 		//Ensure Disconnection from database
 		finally
 		{
-			//Disconnect from the database
+			//Disconnect from the database in reverse order of acquired	
 			try 
 			{
 				statement.close();
 				connect.close();
 			} 
 			
-			catch (SQLException e) 
-			{
-				throw new DAOException(e);
-			}			
+				catch (SQLException e) 
+				{
+					throw new DAOException(e);
+				}			
 		}				
 	}
 		
@@ -159,20 +159,32 @@ public class GameDAOJDBC implements GameDAO{
 			        	dbPrimarykey = resultSet.getInt("_PK_PLAYER");			     
 			        	break;
 			        }
-			 }
-			 
-			//Disconnect from the database in reverse order of acquired			 			
-			statement.close();			 
-			resultSet.close();
-			connect.close();
-		     
-			return dbPrimarykey;
+			 }			 					 									
 		}
 	
-		catch(SQLException o)
+			catch(SQLException o)
+			{
+				throw new DAOException(o);
+			}
+		
+		//Ensure Disconnection from database
+		finally
 		{
-			throw new DAOException(o);
+			//Disconnect from the database in reverse order of acquired	
+			try 
+			{
+				resultSet.close();
+				statement.close();			 				
+				connect.close();	
+			} 
+			
+				catch (SQLException e) 
+				{
+					throw new DAOException(e);
+				}			
 		}
+		
+		return dbPrimarykey;
 	}
 	
 	//Delete user from player table and game database all together
@@ -193,16 +205,28 @@ public class GameDAOJDBC implements GameDAO{
 			connect = daoFactory.getConnection();
 			
 		    statement = connect.prepareStatement("DELETE FROM player WHERE _PK_PLAYER = " + pk);
-			statement.executeUpdate();
-			
-			//Disconnect from the database			
-			statement.close();	
-			connect.close();
+			statement.executeUpdate();			
 		}
 		
-		catch(SQLException o)
+			catch(SQLException o)
+			{
+				throw new DAOException(o);
+			}
+		
+		//Ensure Disconnection from database
+		finally
 		{
-			throw new DAOException(o);
+			//Disconnect from the database in reverse order of acquired	
+			try 
+			{
+				statement.close();	
+				connect.close();	
+			} 
+			
+				catch (SQLException e) 
+				{
+					throw new DAOException(e);
+				}			
 		}
 		System.out.println("Your profile has now been deleted from the database");
 	}
@@ -231,16 +255,28 @@ public class GameDAOJDBC implements GameDAO{
 			//Create a new game
 			statement = connect.prepareStatement("INSERT INTO game (CREATED) values (null);");
 			statement.executeUpdate();
-								
-			//Disconnect from the database			
-			statement.close();
-			connect.close();
 		}
 		
-		catch(SQLException o)
+			catch(SQLException o)
+			{
+				throw new DAOException(o);
+			}	
+		
+		//Ensure Disconnection from database
+		finally
 		{
-			throw new DAOException(o);
-		}		
+			//Disconnect from the database in reverse order of acquired	
+			try 
+			{
+				statement.close();	
+				connect.close();	
+			} 
+			
+				catch (SQLException e) 
+				{
+					throw new DAOException(e);
+				}			
+		}
 	}
 	
 	//This function is used to add a user to a game, sets their initial values across several tables
@@ -251,7 +287,10 @@ public class GameDAOJDBC implements GameDAO{
 		Integer dbpk = pk;//user's pk
 		Integer PK_P2G = 0;//This will set the FK player role for this user
 		Connection connect = null;
-		PreparedStatement statement = null; 
+		PreparedStatement statement1 = null; 
+		PreparedStatement statement2 = null; 
+		PreparedStatement statement3 = null; 
+		PreparedStatement statement4 = null; 
 		ResultSet resultSet = null;//For retrieving database data
 				
 		//Connect to jar file
@@ -265,42 +304,58 @@ public class GameDAOJDBC implements GameDAO{
 			 connect = daoFactory.getConnection();
 			 			 			 
 			 //Go ahead and add them to the candidate list now, that function will sort who is worthy of president there
-			 statement = connect.prepareStatement("INSERT INTO candidates (_FK_PLAYER, _FK_GAME) VALUES (?,?);");	
-			 statement.setInt(1, dbpk);	
-			 statement.setInt(2, game);	
-			 statement.executeUpdate();
+			 statement1 = connect.prepareStatement("INSERT INTO candidates (_FK_PLAYER, _FK_GAME) VALUES (?,?);");	
+			 statement1.setInt(1, dbpk);	
+			 statement1.setInt(2, game);	
+			 statement1.executeUpdate();			
 			 
 			 //Set player_to_game to reflect this new game for this player
-			 statement = connect.prepareStatement("INSERT INTO player_to_game (_FK_PLAYER, _FK_GAME, WHEN_JOINED) VALUES (?,?,?);");
-			 statement.setInt(1, dbpk);
-			 statement.setInt(2, game);
-			 statement.setString(3, null);//Send a null value to trigger an update to joined timestamp			      					  	        					 	        					
-			 statement.executeUpdate();	
+			 statement2 = connect.prepareStatement("INSERT INTO player_to_game (_FK_PLAYER, _FK_GAME, WHEN_JOINED) VALUES (?,?,?);");
+			 statement2.setInt(1, dbpk);
+			 statement2.setInt(2, game);
+			 statement2.setString(3, null);//Send a null value to trigger an update to joined timestamp			      					  	        					 	        					
+			 statement2.executeUpdate();				 
 			 
 			 //Retrieve the player_to_game PK for this user to add to the player_role and voting_history tables
-			 resultSet = statement.executeQuery("SELECT P2G._PK_P2G FROM player_to_game P2G WHERE (P2G._FK_PLAYER = " + dbpk + ");");
-			 resultSet.next();//ADvance the resultSet cursor
+			 resultSet = statement2.executeQuery("SELECT P2G._PK_P2G FROM player_to_game P2G WHERE (P2G._FK_PLAYER = " + dbpk + ") ORDER BY P2G._PK_P2G DESC;");
+			 resultSet.next();//Advance the resultSet cursor
+			 //Should now be able to store the most recent game this player is in
 			 PK_P2G = resultSet.getInt("P2G._PK_P2G");   		
 			 
 			 //Set voting_history for this player for this game
-			 statement = connect.prepareStatement("INSERT INTO voting_history (_FK_P2G) VALUES (?);");	
-			 statement.setInt(1, PK_P2G);	
-			 statement.executeUpdate();
+			 statement3 = connect.prepareStatement("INSERT INTO voting_history (_FK_P2G) VALUES (?);");	
+			 statement3.setInt(1, PK_P2G);	
+			 statement3.executeUpdate();
 			 
 			 //Set default player_role for this player for this game
-			 statement = connect.prepareStatement("INSERT INTO player_role (_FK_P2G) VALUES (?);");	
-			 statement.setInt(1, PK_P2G);		
-			 statement.executeUpdate();
-			 
-			 //Disconnect from the database			
-			 statement.close();
-			 resultSet.close();
-			 connect.close();
+			 statement4 = connect.prepareStatement("INSERT INTO player_role (_FK_P2G) VALUES (?);");	
+			 statement4.setInt(1, PK_P2G);		
+			 statement4.executeUpdate();		
 		}
 			catch(SQLException o)
 			{				
 				throw new DAOException(o);
 			}
+		
+		//Ensure Disconnection from database
+		finally
+		{
+			//Disconnect from the database in reverse order of acquired	
+			try 
+			{
+				 resultSet.close();
+				 statement1.close();	
+				 statement2.close();
+				 statement3.close();
+				 statement4.close();
+				 connect.close();
+			} 
+			
+				catch (SQLException e) 
+				{
+					throw new DAOException(e);
+				}			
+		}
 		
 		return;
 	}
@@ -324,20 +379,32 @@ public class GameDAOJDBC implements GameDAO{
 			//Start the game that this player is currently in
 			statement = connect.prepareStatement("UPDATE game G SET G.STARTED = (?) WHERE G._PK_GAME = " + playerGame + ";");
 			statement.setString(1, null);//Send a null value to trigger an update (effectively starts the game)
-			statement.executeUpdate();						
-			
-			//Disconnect from the database		    
-		    statement.close();	
-		    connect.close();
+			statement.executeUpdate();									
 		}
-		catch(SQLException o)
+			catch(SQLException o)
+			{
+				throw new DAOException(o);
+			}
+		
+		//Ensure Disconnection from database
+		finally
 		{
-			throw new DAOException(o);
-		}			
+			//Disconnect from the database in reverse order of acquired	
+			try 
+			{
+				 statement.close();
+				 connect.close();	
+			} 
+			
+				catch (SQLException e) 
+				{
+					throw new DAOException(e);
+				}			
+		}
 	}
 							
 	//This function will be called to add a user's response to running for president to the database
-	public void candidateAdd (String ans, Integer pk) throws DAOException
+	public void candidateAdd (String ans, Integer pk, Integer playerGame) throws DAOException
 	{
 		Connection connect = null;
 		PreparedStatement stmnt = null; 		
@@ -357,7 +424,7 @@ public class GameDAOJDBC implements GameDAO{
 				 //Add user's response to the Yea column
 				 if (ans.equals("Yea"))    			  
 				 {		        					       					 
-					 stmnt = connect.prepareStatement("UPDATE candidates C SET C.YEA = (?) WHERE C._FK_PLAYER = " + pk + ";");
+					 stmnt = connect.prepareStatement("UPDATE candidates C SET C.YEA = (?) WHERE (C._FK_PLAYER = " + pk + ") AND (C._FK_GAME = " + playerGame + "));");
 					 stmnt.setInt(1, 1);	        					  	        					 	        					
 					 stmnt.executeUpdate();
 					  
@@ -366,20 +433,33 @@ public class GameDAOJDBC implements GameDAO{
 				     //Add user's response to the Nay column
 				     else if (ans.equals("Nay"))
 				     {
-					     stmnt = connect.prepareStatement("UPDATE candidates C SET C.NAY = (?) WHERE C._FK_PLAYER = " + pk + ";");
+					     stmnt = connect.prepareStatement("UPDATE candidates C SET C.NAY = (?) WHERE (C._FK_PLAYER = " + pk + ") AND (C._FK_GAME = " + playerGame + "));");
 					     stmnt.setInt(1, 1);
 					     stmnt.executeUpdate();				  
 					     break;
 				     }				  			  
 			 }
-			 //Disconnect from the database			 
-			 stmnt.close();	
-			 connect.close();
 		}
 		
-		catch(SQLException o)
+			catch(SQLException o)
+			{
+				throw new DAOException(o);
+			}
+		
+		//Ensure Disconnection from database
+		finally
 		{
-			throw new DAOException(o);
+			//Disconnect from the database in reverse order of acquired	
+			try 
+			{
+				 stmnt.close();
+				 connect.close();	
+			} 
+			
+				catch (SQLException e) 
+				{
+					throw new DAOException(e);
+				}			
 		}
 	}
 	
@@ -415,6 +495,7 @@ public class GameDAOJDBC implements GameDAO{
 		       //if we have all of our candidates then populate the election table and exit
 		       if(candidateCounter >= 10)
 		       {
+		    	   resultSet.close();//Reset the resultSet connection
 		    	   //Check if the election table has already been populated
 			       resultSet = statement.executeQuery("SELECT COUNT(E.CANDIDATE) FROM election E, game G WHERE (E._FK_GAME = G._PK_GAME) AND (G._PK_GAME = " + playerGame +");");
 			       resultSet.next();
@@ -453,25 +534,39 @@ public class GameDAOJDBC implements GameDAO{
 							stmnt.setInt(2, FK_CANDIDATE);
 							stmnt.setInt(3, _FK_GAME);
 							stmnt.executeUpdate();
-						}		
-						
-						//Disconnect stmnt from database
-						stmnt.close();
+						}								
 			       }			   	   			    
 
 			       //The election table has been filled
 			       return true;
 		 	   }
-		       
-		       //Disconnect from the database		       
-		       statement.close();		       
-			   resultSet.close();	
-			   connect.close();
 		}
-		catch(SQLException o)
+			catch(SQLException o)
+			{
+				throw new DAOException(o);
+			}
+		
+		//Ensure Disconnection from database
+		finally
 		{
-			throw new DAOException(o);
+			//Disconnect from the database in reverse order of acquired	
+			try 
+			{				 				 				 
+				 if (stmnt != null)//Possible that stmnt will never make a connection to the DB
+				 {	 
+				      stmnt.close();
+				 }
+				 resultSet.close();
+				 statement.close();
+				 connect.close();	
+			} 
+			
+				catch (SQLException e) 
+				{
+					throw new DAOException(e);
+				}			
 		}
+		
 		//The election table is empty, no vote yet
 		return false;
 	}
@@ -480,7 +575,8 @@ public class GameDAOJDBC implements GameDAO{
 	public void elect (String vote, Integer pk, Integer playerGame) throws DAOException
 	{
 		Connection connect = null;
-		PreparedStatement statement = null;		
+		PreparedStatement statement1 = null;
+		PreparedStatement statement2 = null;	
 		
 		//Connect to jar file
 		//connection(); 
@@ -494,22 +590,35 @@ public class GameDAOJDBC implements GameDAO{
 			connect = daoFactory.getConnection();
 			
 			//NOTE that to send a string for comparison you must encapsulate the string in quotes like: '" + value + "'
-			statement = connect.prepareStatement("UPDATE election E, game G SET E.YEA = E.YEA + (?) WHERE (E.CANDIDATE = '" + vote + "') AND (E._FK_GAME = G._PK_GAME) AND (G._PK_GAME = " + playerGame +");");
-			statement.setInt(1, 1);
-			statement.executeUpdate();
+			statement1 = connect.prepareStatement("UPDATE election E, game G SET E.YEA = E.YEA + (?) WHERE (E.CANDIDATE = '" + vote + "') AND (E._FK_GAME = G._PK_GAME) AND (G._PK_GAME = " + playerGame +");");
+			statement1.setInt(1, 1);
+			statement1.executeUpdate();
 			
 			//Update voting history table
-			statement = connect.prepareStatement("UPDATE voting_history V, player_to_game P2G SET V.ELECTION = 1 WHERE (V._FK_P2G = P2G._PK_P2G) AND (P2G._FK_PLAYER = " + pk + ") AND (P2G._FK_GAME = " + playerGame + ");");		
-			statement.executeUpdate();
-			
-			//Disconnect from the database			
-			statement.close();	
-			connect.close();
+			statement2 = connect.prepareStatement("UPDATE voting_history V, player_to_game P2G SET V.ELECTION = 1 WHERE (V._FK_P2G = P2G._PK_P2G) AND (P2G._FK_PLAYER = " + pk + ") AND (P2G._FK_GAME = " + playerGame + ");");		
+			statement2.executeUpdate();
 		}
 		
-		catch(SQLException o)
+			catch(SQLException o)
+			{
+				throw new DAOException(o);
+			}
+		
+		//Ensure Disconnection from database
+		finally
 		{
-			throw new DAOException(o);
+			//Disconnect from the database in reverse order of acquired	
+			try 
+			{
+				 statement1.close();
+				 statement2.close();
+				 connect.close();	
+			} 
+			
+				catch (SQLException e) 
+				{
+					throw new DAOException(e);
+				}			
 		}
 	}
 	
@@ -538,18 +647,32 @@ public class GameDAOJDBC implements GameDAO{
 	        while (resultSet.next())
 	        {
 	        	playersInGame++;
-	        }
-	        
-			//Disconnect from the database		   
-		    statement.close();
-		    connect.close();
+	        }	        
 		    
 		    return playersInGame;		
 	    }		
-		//Catch any errors	
-		catch(SQLException o)
+			
+		    //Catch any errors	
+			catch(SQLException o)
+			{
+				throw new DAOException(o);
+			}
+		
+		//Ensure Disconnection from database
+		finally
 		{
-			throw new DAOException(o);
+			//Disconnect from the database in reverse order of acquired	
+			try 
+			{
+				 resultSet.close(); 
+				 statement.close();				 
+				 connect.close();	
+			} 
+			
+				catch (SQLException e) 
+				{
+					throw new DAOException(e);
+				}			
 		}
 	}
 	
@@ -585,10 +708,6 @@ public class GameDAOJDBC implements GameDAO{
 			        	//This player is already in a valid game
 			        	if (resultSet.getInt("_FK_GAME") > 0)
 	        			{
-			        		//Disconnect from the database
-		       		        connect.close();
-		       		        statement.close();				 				
-		       			    resultSet.close(); 
 		       			    //User in a game
 		       			    inGame = true;
 		       			    
@@ -597,25 +716,33 @@ public class GameDAOJDBC implements GameDAO{
 				        	//This player is not in a game
 			        		else
 				        	{
-			        			//Disconnect from the database
-			       		        connect.close();
-			       		        statement.close();				 				
-			       			    resultSet.close();
 			        			//User not found or user not in game
 			       			    return inGame;			        		
 				        	}			        	
 			        }
-			 }
-		     
-		     //Disconnect from the database and close statements (might be possible to hack the statements if they stay open)		     
-		     statement.close();				 				
-			 resultSet.close();		
-			 connect.close();
+			 }		     
 		}
 		
-		catch(SQLException o)
-		{				
-			throw new DAOException(o);
+			catch(SQLException o)
+			{				
+				throw new DAOException(o);
+			}
+		
+		//Ensure Disconnection from database
+		finally
+		{
+			//Disconnect from the database in reverse order of acquired	
+			try 
+			{
+				 resultSet.close();
+				 statement.close();			 
+				 connect.close();	
+			} 
+			
+				catch (SQLException e) 
+				{
+					throw new DAOException(e);
+				}			
 		}
 		//Player not found, can't be in game (this will be the default return)
 		return inGame;
@@ -651,27 +778,35 @@ public class GameDAOJDBC implements GameDAO{
 			//This game has not started
 			if (startTime == null)
 			{
-				//Disconnect from the database				
-			    statement.close();				 				
-				resultSet.close();
-				connect.close();
-				
 				return false;
 			}
 			    //This game has started
 				else
 				{
-					//Disconnect from the database					
-				    statement.close();				 				
-					resultSet.close();
-					connect.close();
-					
 					return true;
 				}						
 		}
-		catch(SQLException o)
+		
+			catch(SQLException o)
+			{
+				throw new DAOException(o);
+			}
+		
+		//Ensure Disconnection from database
+		finally
 		{
-			throw new DAOException(o);
+			//Disconnect from the database in reverse order of acquired	
+			try 
+			{
+				 resultSet.close(); 
+				 statement.close();				 
+				 connect.close();	
+			} 
+			
+				catch (SQLException e) 
+				{
+					throw new DAOException(e);
+				}			
 		}
 	}
 	
@@ -686,7 +821,11 @@ public class GameDAOJDBC implements GameDAO{
 		Boolean answered = false;
 		Connection connect = null;
 		PreparedStatement statement = null;
-		ResultSet resultSet = null;
+		ResultSet resultSet1 = null;
+		ResultSet resultSet2 = null;
+		ResultSet resultSet3 = null;
+		ResultSet resultSet4 = null;
+		ResultSet resultSet5 = null;
 						
 		//Connect to jar file
 		//connection();
@@ -702,24 +841,24 @@ public class GameDAOJDBC implements GameDAO{
 			 statement = connect.prepareStatement("SELECT COUNT(C.YEA) FROM candidates C, " 
                                                      + "game G WHERE (C.YEA = 1) AND (C._FK_GAME = G._PK_GAME) AND (G._PK_GAME = " + playerGame +");");			 
 			 //Set data in DAO
-			 resultSet = statement.executeQuery();
+			 resultSet1 = statement.executeQuery();
 			 //Advance cursor through data (i.e. retrieve it)
-		     resultSet.next();
-		     candidateCounter = resultSet.getInt(1);
+		     resultSet1.next();
+		     candidateCounter = resultSet1.getInt(1);
 		     
 		     //Count the number of users in this game who have answered yea or nay
-		     resultSet = statement.executeQuery("SELECT COUNT(C._PK_CANDIDATES) FROM candidates C, " +
+		     resultSet2 = statement.executeQuery("SELECT COUNT(C._PK_CANDIDATES) FROM candidates C, " +
                       "game G WHERE (C._FK_GAME = G._PK_GAME) AND (C.YEA = 1 OR NAY = 1) AND (G._PK_GAME = " + playerGame +");");
              //ADvance cursor to retrieve data stored in resultSet
-		     resultSet.next();
-		     answeredCounter = resultSet.getInt(1);
+		     resultSet2.next();
+		     answeredCounter = resultSet2.getInt(1);
 		     
 		     //Count the number of users in this game's player database
 		     //Count the number of users in this games player database
-		     resultSet = statement.executeQuery("SELECT COUNT(P.USERNAME) FROM player P, player_to_game P2G, game G WHERE" +
+		     resultSet3 = statement.executeQuery("SELECT COUNT(P.USERNAME) FROM player P, player_to_game P2G, game G WHERE" +
 		     		                             " (P._PK_PLAYER = P2G._FK_PLAYER) AND (P2G._FK_GAME = G._PK_GAME) AND (G._PK_GAME = " + playerGame +");");
-		     resultSet.next();
-		     userCounter = resultSet.getInt(1);
+		     resultSet3.next();
+		     userCounter = resultSet3.getInt(1);
 		     
 		     System.out.println("This game has " + candidateCounter + " viable candidates for president");
 		     System.out.println("This game has " + answeredCounter + " candidates who've accepted or declined nomination");
@@ -730,18 +869,18 @@ public class GameDAOJDBC implements GameDAO{
 		     {
 		    	 System.out.println("ENTERING line 497\n");
 		    	 //Return the top ten users by rep points and FIFO join time from the same game
-			     resultSet = statement.executeQuery("SELECT P._PK_PLAYER, P.REPUTATION_POINTS, C.YEA, C.NAY " +
+			     resultSet4 = statement.executeQuery("SELECT P._PK_PLAYER, P.REPUTATION_POINTS, C.YEA, C.NAY " +
 			     		"FROM player P, candidates C, game G WHERE (P._PK_PLAYER = C._FK_PLAYER) AND (C.YEA = 0 AND C.NAY = 0) AND (C._FK_GAME = G._PK_GAME) AND (G._PK_GAME = " + playerGame +") "  +
 			     		"ORDER BY P.REPUTATION_POINTS, P._PK_PLAYER LIMIT 10;");
 			     
 			     //retrieve rp's FOR THIS USER	
-			     while (resultSet.next()) 
+			     while (resultSet4.next()) 
 				 {      				    		       			        			    	 
 			    	    //User found in top ten!
-				        if (pk == resultSet.getInt("_PK_PLAYER")) 
+				        if (pk == resultSet4.getInt("_PK_PLAYER")) 
 				        {			        			    				    
 				        	//This user was found in the top ten
-				        	RP = resultSet.getInt("REPUTATION_POINTS");						       
+				        	RP = resultSet4.getInt("REPUTATION_POINTS");						       
 				        	break;
 				        }
 				 }
@@ -750,13 +889,13 @@ public class GameDAOJDBC implements GameDAO{
 			     //If RP is still 0 then this user wasn't found in the top ten qualified candidates and this code will be skipped
 			     if (RP > 0)
 			     {	    	 
-			    	  resultSet = statement.executeQuery("select * from candidates C, game G WHERE (C._FK_GAME = G._PK_GAME) AND (G._PK_GAME = " + playerGame + ");");			          
+			    	  resultSet5 = statement.executeQuery("select * from candidates C, game G WHERE (C._FK_GAME = G._PK_GAME) AND (G._PK_GAME = " + playerGame + ");");			          
 			    	  //Check to see if this user has already decided to accept or decline nomination
-			          while (resultSet.next())
+			          while (resultSet5.next())
 			          {			        	  			        	 
-			        	  if (pk == resultSet.getInt("_FK_PLAYER"))
+			        	  if (pk == resultSet5.getInt("_FK_PLAYER"))
 			        	  {
-			        		  if (resultSet.getInt("Yea") == 1 || resultSet.getInt("Nay") == 1)
+			        		  if (resultSet5.getInt("Yea") == 1 || resultSet5.getInt("Nay") == 1)
 			        		  {
 			        			  //This user has already decided whether to run or not
 			        			  answered = true;
@@ -769,20 +908,44 @@ public class GameDAOJDBC implements GameDAO{
 	        		  {        			  	        	    	  	        	    	  
 	        	    	  return true;
 	        		  }		        	  		          		        	  
-			     }
-			     		    		     
-				 //Disconnect from the database		     
-			     statement.close();				 				
-				 resultSet.close();
-				 connect.close();
-				 
+			     }			     		    		     				 
 				 //Either we have all the candidates, or this user has responded already, or this user doesn't qualify to run
 				 return false;
 			}
 		}
-		catch(SQLException o)
+		
+			catch(SQLException o)
+			{
+				throw new DAOException(o);
+			}
+		
+		//Ensure Disconnection from database
+		finally
 		{
-			throw new DAOException(o);
+			//Disconnect from the database in reverse order of acquired	
+			try 
+			{
+				 resultSet1.close();
+				 resultSet2.close();
+				 resultSet3.close();
+				 
+				 if ( resultSet4 != null)//Possible for resultSet4 to be null
+				 {
+				     resultSet4.close();
+				 }
+				 
+					 if ( resultSet5 != null)//Possible for resultSet4 to be null
+					 {
+					     resultSet5.close();
+					 }
+				 statement.close();				 
+				 connect.close();	
+			} 
+			
+				catch (SQLException e) 
+				{
+					throw new DAOException(e);
+				}			
 		}
 		//Default return, don't risk adding candidates in case an error happens that sends the code here
 		return false;
@@ -812,23 +975,34 @@ public class GameDAOJDBC implements GameDAO{
 	        while (resultSet.next())
 	        {
 	        	if(resultSet.getString(1).equals(user))
-	        	{
-	        		//Disconnect from the database
-	    		    connect.close();
-	    		    statement.close();	
+	        	{	
 	        		return true;
 	        	}
 	        }
 	        
-	        //Disconnect from the database		    
-		    statement.close();
-		    connect.close();
 		    return false;			
 		}
 		
-		catch(SQLException o)
+			catch(SQLException o)
+			{
+				throw new DAOException(o);
+			}
+		
+		//Ensure Disconnection from database
+		finally
 		{
-			throw new DAOException(o);
+			//Disconnect from the database in reverse order of acquired	
+			try 
+			{
+				 resultSet.close(); 
+				 statement.close();				 
+				 connect.close();	
+			} 
+			
+				catch (SQLException e) 
+				{
+					throw new DAOException(e);
+				}			
 		}
 	}
 	
@@ -849,8 +1023,8 @@ public class GameDAOJDBC implements GameDAO{
 			 //Connect to DB
 			 //connect = dbConnection();	
 			
-			//connect to the database and jar file through the DAO Factory
-			connect = daoFactory.getConnection();
+			 //connect to the database and jar file through the DAO Factory
+			 connect = daoFactory.getConnection();
 			
 			 //Pull this player from voting_history
 			 statement = connect.prepareStatement("SELECT ELECTION FROM voting_history V, player_to_game P2G " 
@@ -865,15 +1039,28 @@ public class GameDAOJDBC implements GameDAO{
 		    	 //This player has voted in this election
 		    	 voted = true;
 		     }
-		     //Disconnect from the database		     
-		     statement.close();
-		     resultSet.close();
-		     connect.close();
 		}
 		
-		catch(SQLException o)
+			catch(SQLException o)
+			{
+				throw new DAOException(o);
+			}
+		
+		//Ensure Disconnection from database
+		finally
 		{
-			throw new DAOException(o);
+			//Disconnect from the database in reverse order of acquired	
+			try 
+			{
+				 resultSet.close();
+				 statement.close();
+				 connect.close();	
+			} 
+			
+				catch (SQLException e) 
+				{
+					throw new DAOException(e);
+				}			
 		}
 		
 		//Default is false
@@ -913,24 +1100,31 @@ public class GameDAOJDBC implements GameDAO{
 			    	 //There are still players who need to vote in this election
 			    	 finished = false;
 			    	 
-			    	 //Disconnect from the database
-				     connect.close();
-				     statement.close();
-				     resultSet.close();
-			    	 
 			    	 return finished;
 			     }
-		     }
-		     
-		     //Disconnect from the database		     
-		     statement.close();
-		     resultSet.close();
-		     connect.close();
+		     }	     
 		}
 		
-		catch(SQLException o)
+			catch(SQLException o)
+			{
+				throw new DAOException(o);
+			}
+		
+		//Ensure Disconnection from database
+		finally
 		{
-			throw new DAOException(o);
+			//Disconnect from the database in reverse order of acquired	
+			try 
+			{
+				 resultSet.close();				
+				 statement.close();				 
+				 connect.close();	
+			} 
+			
+				catch (SQLException e) 
+				{
+					throw new DAOException(e);
+				}			
 		}
 	    	    
 		//Default is True 
@@ -967,18 +1161,31 @@ public class GameDAOJDBC implements GameDAO{
 			 {      				    		       			        			    	 
 		    	 //Add available games to vector
 		    	 games.addElement(new Integer(resultSet.getInt("_PK_GAME")));    
-			 }
-		     
-		     //Disconnect from the database and close statements (might be possible to hack the statements if they stay open)		     
-		     statement.close();				 				
-			 resultSet.close();	
-			 connect.close();
+			 }		     
 		}
 		
 			catch(SQLException o)
 			{				
 				throw new DAOException(o);
 			}
+		
+		//Ensure Disconnection from database
+		finally
+		{
+			//Disconnect from the database in reverse order of acquired	
+			try 
+			{
+				 resultSet.close();
+				 statement.close();				 
+				 connect.close();	
+			} 
+			
+				catch (SQLException e) 
+				{
+					throw new DAOException(e);
+				}			
+		}
+		
 		//Return the vector of available games
 		return games;
 	}
@@ -1025,17 +1232,29 @@ public class GameDAOJDBC implements GameDAO{
 	        			}			        				        	
 			        }
 			 }
-		     
-		     //Disconnect from the database and close statements (might be possible to hack the statements if they stay open)		     
-		     statement.close();				 				
-			 resultSet.close();		
-			 connect.close();
 		}
 		
 			catch(SQLException o)
 			{				
 				throw new DAOException(o);
 			}
+		
+		//Ensure Disconnection from database
+		finally
+		{
+			//Disconnect from the database in reverse order of acquired	
+			try 
+			{
+				 resultSet.close();
+				 statement.close();				 
+				 connect.close();	
+			} 
+			
+				catch (SQLException e) 
+				{
+					throw new DAOException(e);
+				}			
+		}
 				
 		return games;		
 	}
@@ -1048,7 +1267,7 @@ public class GameDAOJDBC implements GameDAO{
 		Integer[] candidateRP = new Integer[10];	
 		Connection connect = null;
 		PreparedStatement statement = null;
-		ResultSet result = null;		
+		ResultSet resultSet = null;		
 		
 		//Connect to jar file
 		//connection();
@@ -1065,22 +1284,36 @@ public class GameDAOJDBC implements GameDAO{
 			                                  "FROM player P, candidates C, player_to_game P2G, game G WHERE (C._FK_PLAYER = P._PK_PLAYER)" +
 					                          " AND (P2G._FK_PLAYER = P._PK_PLAYER) AND (P2G._FK_GAME = G._PK_GAME) AND (G._PK_GAME = " + playerGame +");");
 			//Creating a variable to execute query
-			result = statement.executeQuery();
+			resultSet = statement.executeQuery();
 			//populate the class member candidateList
 			for (j = 0; j <= 9; j++)
 			{
-				result.next();//retrieve database data				
+				resultSet.next();//retrieve database data				
 				//convert that data into the arrays
-				candidateRP[j] = result.getInt(1);
+				candidateRP[j] = resultSet.getInt(1);
 			}
-			//Disconnect from the database
-			statement.close();			
-			result.close();
-			connect.close();
 		}
-		catch(SQLException o)
+		
+			catch(SQLException o)
+			{
+				throw new DAOException(o);
+			}
+		
+		//Ensure Disconnection from database
+		finally
 		{
-			throw new DAOException(o);
+			//Disconnect from the database in reverse order of acquired	
+			try 
+			{
+				 resultSet.close();
+				 statement.close();			 
+				 connect.close();	
+			} 
+			
+				catch (SQLException e) 
+				{
+					throw new DAOException(e);
+				}			
 		}
 		
 		return candidateRP;
@@ -1094,7 +1327,7 @@ public class GameDAOJDBC implements GameDAO{
 		String[] candidateList = new String[10];//Holds candidate list for each game
 		Connection connect = null;
 		PreparedStatement statement = null;
-		ResultSet result = null;
+		ResultSet resultSet = null;
 		
 		//Connect to the database
 		//connection();				
@@ -1112,24 +1345,37 @@ public class GameDAOJDBC implements GameDAO{
 					                          "AND (P2G._FK_PLAYER = P._PK_PLAYER) AND (P2G._FK_GAME = G._PK_GAME) AND (G._PK_GAME = " + playerGame +");");							
 
 			//Creating a variable to execute query
-			result = statement.executeQuery();
+			resultSet = statement.executeQuery();
 			
 			//populate the class member candidateList
 			for (j = 0; j <= 9; j++)
 			{
-				result.next();//retrieve database data				
+				resultSet.next();//retrieve database data				
 				//convert that data into the arrays
-				candidateList[j] = result.getString(1);
+				candidateList[j] = resultSet.getString(1);
 			}
-
-			//Disconnect from the database
-			statement.close();			
-			result.close();
-			connect.close();
 		}
-		catch(SQLException o)
+		
+			catch(SQLException o)
+			{
+				throw new DAOException(o);
+			}
+		
+		//Ensure Disconnection from database
+		finally
 		{
-			throw new DAOException(o);
+			//Disconnect from the database in reverse order of acquired	
+			try 
+			{
+				 resultSet.close();
+				 statement.close();				 
+				 connect.close();	
+			} 
+			
+				catch (SQLException e) 
+				{
+					throw new DAOException(e);
+				}			
 		}
 		
 		return candidateList;
@@ -1169,14 +1415,28 @@ public class GameDAOJDBC implements GameDAO{
 				//convert that data into the arrays
 				electionResults[j] = resultSet.getString(1) + " with " + Integer.toString(votes) + " votes";
 			}
-			//Disconnect from the database
-			statement.close();			
-			resultSet.close();
-			connect.close();
 		}
-		catch(SQLException o)
+		
+			catch(SQLException o)
+			{
+				throw new DAOException(o);
+			}
+		
+		//Ensure Disconnection from database
+		finally
 		{
-			throw new DAOException(o);
+			//Disconnect from the database in reverse order of acquired	
+			try 
+			{
+				 resultSet.close();
+				 statement.close();				 
+				 connect.close();	
+			} 
+			
+				catch (SQLException e) 
+				{
+					throw new DAOException(e);
+				}			
 		}
 		
 		return electionResults;
@@ -1206,15 +1466,28 @@ public class GameDAOJDBC implements GameDAO{
 			//Advance the result cursor
 			resultSet.next();
 			winner = resultSet.getString(1);
-			
-			//Disconnect from the database
-			statement.close();			
-			resultSet.close();
-			connect.close();
 		}
-		catch(SQLException o)
+		
+			catch(SQLException o)
+			{
+				throw new DAOException(o);
+			}
+		
+		//Ensure Disconnection from database
+		finally
 		{
-			throw new DAOException(o);
+			//Disconnect from the database in reverse order of acquired	
+			try 
+			{
+				 resultSet.close();
+				 statement.close();				 
+				 connect.close();	
+			} 
+			
+				catch (SQLException e) 
+				{
+					throw new DAOException(e);
+				}			
 		}
 		
 		return winner;
@@ -1228,8 +1501,12 @@ public class GameDAOJDBC implements GameDAO{
 		//Function variables
 		Integer P2G_PK = 0;
 		Connection connect = null;
-		PreparedStatement statement = null;
-		ResultSet result = null;
+		PreparedStatement statement1 = null;
+		PreparedStatement statement2 = null;
+		PreparedStatement statement3 = null;
+		PreparedStatement statement4 = null;
+		ResultSet resultSet1 = null;
+		ResultSet resultSet2 = null;
 		
 		//Connect to the jar file
 		//connection();
@@ -1242,34 +1519,52 @@ public class GameDAOJDBC implements GameDAO{
 			connect = daoFactory.getConnection();
 						
 			//First set president for this game
-			statement = connect.prepareStatement("SELECT P2G._PK_P2G, E.YEA, E.CANDIDATE from election E, player_to_game P2G, candidates C, player P WHERE " + 
+			statement1 = connect.prepareStatement("SELECT P2G._PK_P2G, E.YEA, E.CANDIDATE from election E, player_to_game P2G, candidates C, player P WHERE " + 
 					                               "(E._FK_CANDIDATES = C._PK_CANDIDATES) AND (C._FK_PLAYER= P._PK_PLAYER) AND (P2G._FK_PLAYER = P._PK_PLAYER) AND (E._FK_GAME = " + playerGame +") " +
 					                                  "AND (C._FK_GAME = " + playerGame + ") AND (P2G._FK_GAME = " + playerGame + ") ORDER BY E.YEA DESC LIMIT 1;");
-			result = statement.executeQuery();//Capture result set
-			result.next();//Bring up data into cursor
-			P2G_PK = result.getInt("P2G._PK_P2G");//Store the primary key for later
-            //Set this player to be president
-			statement = connect.prepareStatement("UPDATE player_role PR SET PR.PRESIDENT = 1 WHERE PR._FK_P2G = " + result.getInt("P2G._PK_P2G") + ";");
-			statement.executeUpdate();
+			resultSet1 = statement1.executeQuery();//Capture result set
+			resultSet1.next();//Bring up data into cursor
+			P2G_PK = resultSet1.getInt("P2G._PK_P2G");//Store the primary key for later
+            
+			//Set this player to be president
+			statement2 = connect.prepareStatement("UPDATE player_role PR SET PR.PRESIDENT = 1 WHERE PR._FK_P2G = " + resultSet1.getInt("P2G._PK_P2G") + ";");
+			statement2.executeUpdate();
 			
 			//Next set all other players in this game to be senators, exclude the current president
-			statement = connect.prepareStatement("SELECT P2G._PK_P2G from player_to_game P2G WHERE (P2G._FK_GAME = " + playerGame + ") AND (P2G._PK_P2G != " + P2G_PK  + ");");
-			result = statement.executeQuery();//Capture result set
+			statement3 = connect.prepareStatement("SELECT P2G._PK_P2G from player_to_game P2G WHERE (P2G._FK_GAME = " + playerGame + ") AND (P2G._PK_P2G != " + P2G_PK  + ");");
+			resultSet2 = statement3.executeQuery();//Capture result set
 			//Set all senators
-			while (result.next()) 
+			while (resultSet2.next()) 
 			{
-				statement = connect.prepareStatement("UPDATE player_role PR SET PR.SENATOR = 1 WHERE PR._FK_P2G = " + result.getInt("P2G._PK_P2G") + ";");
-				statement.executeUpdate();
+				statement4 = connect.prepareStatement("UPDATE player_role PR SET PR.SENATOR = 1 WHERE PR._FK_P2G = " + resultSet2.getInt("P2G._PK_P2G") + ";");
+				statement4.executeUpdate();
 			}
-						
-			//Disconnect from the database
-			statement.close();			
-			result.close();
-			connect.close();
 		}
-		catch(SQLException o)
+		
+			catch(SQLException o)
+			{
+				throw new DAOException(o);
+			}
+		
+		//Ensure Disconnection from database
+		finally
 		{
-			throw new DAOException(o);
+			//Disconnect from the database in reverse order of acquired	
+			try 
+			{
+				 resultSet1.close();
+				 resultSet2.close();
+				 statement1.close();
+				 statement2.close();
+				 statement3.close();
+				 statement4.close();				
+				 connect.close();	
+			} 
+			
+				catch (SQLException e) 
+				{
+					throw new DAOException(e);
+				}			
 		}
 	}
 }	

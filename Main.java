@@ -152,7 +152,6 @@ public class Main {
 	    
 	    btnJoinGame.addActionListener(new ActionListener() {
 	    	public void actionPerformed(ActionEvent arg0) {
-	    		//System.out.println("entering 128\n");
 	    		//Add user to game
 	    		StartMenu.setVisible(false);
 	    		JoinGame.setVisible(true);
@@ -573,7 +572,7 @@ public class Main {
 				public void actionPerformed(ActionEvent arg0) {
 					ans = "Yea";
 					//Call candidate add to store this candidates answer
-					gameDAO.candidateAdd(ans, getPrimaryKey());
+					gameDAO.candidateAdd(ans, getPrimaryKey(), getPlayerGame());
 					//reset ans class variable to null
 					ans = null;
 					//hide this candidate panel, for now return to title screen or if election is ready go to election
@@ -604,7 +603,7 @@ public class Main {
 				public void actionPerformed(ActionEvent e) {
 					ans = "Nay";
 					//Call candidate add to store this candidates answer
-					gameDAO.candidateAdd(ans, getPrimaryKey());
+					gameDAO.candidateAdd(ans, getPrimaryKey(), getPlayerGame());
 					//reset ans class variable to null
 					ans = null;
 					//hide this candidate panel, for now return to title screen or if election is ready go to election
@@ -669,23 +668,17 @@ public class Main {
 				candidate = candidateUN[0] + " RP: ";
 				final JRadioButton candidate0 = new JRadioButton(candidate + candidatesRP[0]);
 				candidate0.setBounds(26, 82, 124, 23);
-				Election.add(candidate0);								
-				
-				System.out.println("candidate: " + candidate + "\n");
+				Election.add(candidate0);												
 				
 				candidate = candidateUN[1] + " RP: ";
 				final JRadioButton candidate1 = new JRadioButton(candidate + candidatesRP[1]);
 				candidate1.setBounds(26, 108, 124, 23);
-				Election.add(candidate1);				
-				
-				System.out.println("candidate: " + candidate + "\n");
+				Election.add(candidate1);								
 				
 				candidate = candidateUN[2] + " RP: ";
 				final JRadioButton candidate2 = new JRadioButton(candidate + candidatesRP[2]);
 				candidate2.setBounds(26, 134, 124, 23);
 				Election.add(candidate2);
-				
-				System.out.println("candidate: " + candidate + "\n");
 				
 				candidate = candidateUN[3] + " RP: ";
 				final JRadioButton candidate3 = new JRadioButton(candidate + candidatesRP[3]);
@@ -892,23 +885,17 @@ public class Main {
 		electionResult = electionResults[0];
 		JLabel First = DefaultComponentFactory.getInstance().createLabel(electionResult);
 		First.setBounds(172, 55, 234, 14);
-		ElectionResults.add(First);		
-		
-		System.out.println("candidate: " + electionResult + " player game: " + getPlayerGame() + "\n");
+		ElectionResults.add(First);				
 		
 		electionResult = electionResults[1];
 		JLabel Second = DefaultComponentFactory.getInstance().createLabel(electionResult);
 		Second.setBounds(172, 72, 234, 14);
-		ElectionResults.add(Second);
-		
-		System.out.println("candidate: " + electionResult + "\n");
+		ElectionResults.add(Second);		
 		
 		electionResult = electionResults[2];
 		JLabel Third = DefaultComponentFactory.getInstance().createLabel(electionResult);
 		Third.setBounds(172, 89, 234, 14);
-		ElectionResults.add(Third);
-		
-		System.out.println("candidate: " + electionResult + "\n");
+		ElectionResults.add(Third);		
 		
 		electionResult = electionResults[3];
 		JLabel Fourth = DefaultComponentFactory.getInstance().createLabel(electionResult);
@@ -1035,12 +1022,13 @@ public class Main {
 						}
 						
 							else if (candidateCheck == false)
-							{								
-								//Election set up, go to election page
+							{															
+								//Election set up, go to election page and the election has NOT finished
 								if ((gameDAO.electionSetup(getPlayerGame())==true))
 								{									
+									System.out.println("1030\n");
 									//Check if election completed, if so go to winner panel									
-									if (gameDAO.electionFinishedCheck(getPlayerGame())==false)
+									if ((gameDAO.electionFinishedCheck(getPlayerGame())==false) && (gameDAO.electionFinishedCheck(getPlayerGame())==false))
 									{
 										if((gameDAO.electionVoteCheck(getPrimaryKey(), getPlayerGame()) == false))
 										{
@@ -1073,6 +1061,7 @@ public class Main {
 									//The election has completed, take this player to the winner page
 									else if (gameDAO.electionFinishedCheck(getPlayerGame())==true)
 									{
+										System.out.println("1065\n");
 										//Go to the winner panel
 								    	Winner.removeAll();						
 										winner();
