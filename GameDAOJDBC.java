@@ -28,33 +28,7 @@ import java.util.Vector;
 //**********Follow Ballus' DAO tutorial to round this thing out, then in the GUI (for now) create instances of the DAO to test, then add connection pool
 //**********Potentially then move the DAO and DB to a server and see if you can connect directly with the GUI, then move on to implementing server class
 public class GameDAOJDBC implements GameDAO{	 
-	/*					
-	//Connect to sql JAR file, private to ensure only DAO has access to this data
-	private static void connection()
-	{
-		try{
-			//Accessing driver from the JAR file
-			Class.forName("com.mysql.jdbc.Driver");
-		}catch (ClassNotFoundException o){
-			o.printStackTrace();
-		}
-	}
-	
-	//This function connects to the mysql database game, once on server we can change passwords more easily from here
-	//Private to ensure only DAO has access to this data
-	private static Connection dbConnection()
-	{
-		Connection connect = null;
-		
-		try{
-			//zeroDateTimeBehavior=convertToNull converts 0:00:00etc. time-stamps to null preventing the system from crashing
-			connect = DriverManager.getConnection("jdbc:mysql://localhost:3306/game?zeroDateTimeBehavior=convertToNull", "root","Scruffy#1");
-		}catch(SQLException o){
-			o.printStackTrace();
-		}
-		
-		return connect;
-	}*/
+	//Connections to MySQL jar file and MySQL DB now occur within the DAOFactory.  Any security changes happen there and inside the dao.properties file
 	
 	// Vars ---------------------------------------------------------------------------------------
     private DAOFactory daoFactory;//An instance of DAOFactory
@@ -78,15 +52,9 @@ public class GameDAOJDBC implements GameDAO{
 		//Declare variables
 		Connection connect = null;		
 		PreparedStatement statement = null;
-		
-		//connect to jar file
-		//connection();				
+					
 		try
-		{
-			
-			//connect to the database
-			//connect = dbConnection();
-			
+		{			
 			//connect to the database and jar file through the DAO Factory
 			connect = daoFactory.getConnection();
 			
@@ -111,7 +79,8 @@ public class GameDAOJDBC implements GameDAO{
 			try 
 			{
 				statement.close();
-				connect.close();
+				daoFactory.closeConnection(connect);
+				//connect.close();
 			} 
 			
 				catch (SQLException e) 
@@ -131,15 +100,9 @@ public class GameDAOJDBC implements GameDAO{
 		Connection connect = null;
 		PreparedStatement statement = null;
 		ResultSet resultSet = null;
-				
-		//Connect to jar file
-		//connection();
 		
 		try
-		{			
-			 //Connect to database
-			 //connect = dbConnection();
-			
+		{						
 			 //connect to the database and jar file through the DAO Factory
 			 connect = daoFactory.getConnection();
 			 			 			 
@@ -174,8 +137,10 @@ public class GameDAOJDBC implements GameDAO{
 			try 
 			{
 				resultSet.close();
-				statement.close();			 				
-				connect.close();	
+				statement.close();	
+				//Not sure if this is a good idea or not, would this hit a critical section and cause race conditions?
+				daoFactory.closeConnection(connect);
+				//connect.close();	
 			} 
 			
 				catch (SQLException e) 
@@ -192,15 +157,10 @@ public class GameDAOJDBC implements GameDAO{
 	{
 		//Create variables
 		Connection connect = null;
-		PreparedStatement statement = null;
-		
-		//connection();
+		PreparedStatement statement = null;	
 				
 		try
-		{
-			//connect to the database
-			//connect = dbConnection();
-			
+		{			
 			//connect to the database and jar file through the DAO Factory
 			connect = daoFactory.getConnection();
 			
@@ -220,7 +180,8 @@ public class GameDAOJDBC implements GameDAO{
 			try 
 			{
 				statement.close();	
-				connect.close();	
+				daoFactory.closeConnection(connect);
+				//connect.close();	
 			} 
 			
 				catch (SQLException e) 
@@ -239,16 +200,9 @@ public class GameDAOJDBC implements GameDAO{
 		//Declare variables
 		Connection connect = null;		
 		PreparedStatement statement = null;
-		
-		//connect to jar file
-		//connection();
-				
+						
 		try
-		{
-			
-			//connect to the database
-			//connect = dbConnection();
-			
+		{					
 			//connect to the database and jar file through the DAO Factory
 			connect = daoFactory.getConnection();
 			
@@ -269,7 +223,8 @@ public class GameDAOJDBC implements GameDAO{
 			try 
 			{
 				statement.close();	
-				connect.close();	
+				daoFactory.closeConnection(connect);
+				//connect.close();	
 			} 
 			
 				catch (SQLException e) 
@@ -292,14 +247,9 @@ public class GameDAOJDBC implements GameDAO{
 		PreparedStatement statement3 = null; 
 		PreparedStatement statement4 = null; 
 		ResultSet resultSet = null;//For retrieving database data
-				
-		//Connect to jar file
-		//connection();
-												
+																
 		try
-		{
-			 //connect = dbConnection();
-			
+		{			
 			 //connect to the database and jar file through the DAO Factory
 			 connect = daoFactory.getConnection();
 			 			 			 
@@ -348,7 +298,8 @@ public class GameDAOJDBC implements GameDAO{
 				 statement2.close();
 				 statement3.close();
 				 statement4.close();
-				 connect.close();
+				 daoFactory.closeConnection(connect);
+				 //connect.close();
 			} 
 			
 				catch (SQLException e) 
@@ -366,13 +317,9 @@ public class GameDAOJDBC implements GameDAO{
 	{
 		Connection connect = null;
 		PreparedStatement statement = null;
-		//Connect to jar file
-		//connection();		
-				
+		
 		try
-		{
-			//connect = dbConnection();//Connect to db
-			
+		{		
 			//connect to the database and jar file through the DAO Factory
 			connect = daoFactory.getConnection();
 			
@@ -393,7 +340,8 @@ public class GameDAOJDBC implements GameDAO{
 			try 
 			{
 				 statement.close();
-				 connect.close();	
+				 daoFactory.closeConnection(connect);
+				 //connect.close();	
 			} 
 			
 				catch (SQLException e) 
@@ -408,14 +356,9 @@ public class GameDAOJDBC implements GameDAO{
 	{
 		Connection connect = null;
 		PreparedStatement stmnt = null; 		
-		
-		//Connect to jar file
-		//connection();
-		
+				
 		try
-		{
-			 //connect = dbConnection();
-			
+		{		
 			 //connect to the database and jar file through the DAO Factory
 			 connect = daoFactory.getConnection();
 			 
@@ -424,7 +367,7 @@ public class GameDAOJDBC implements GameDAO{
 				 //Add user's response to the Yea column
 				 if (ans.equals("Yea"))    			  
 				 {		        					       					 
-					 stmnt = connect.prepareStatement("UPDATE candidates C SET C.YEA = (?) WHERE (C._FK_PLAYER = " + pk + ") AND (C._FK_GAME = " + playerGame + "));");
+					 stmnt = connect.prepareStatement("UPDATE candidates C SET C.YEA = (?) WHERE (C._FK_PLAYER = " + pk + ") AND (C._FK_GAME = " + playerGame + ");");
 					 stmnt.setInt(1, 1);	        					  	        					 	        					
 					 stmnt.executeUpdate();
 					  
@@ -433,7 +376,7 @@ public class GameDAOJDBC implements GameDAO{
 				     //Add user's response to the Nay column
 				     else if (ans.equals("Nay"))
 				     {
-					     stmnt = connect.prepareStatement("UPDATE candidates C SET C.NAY = (?) WHERE (C._FK_PLAYER = " + pk + ") AND (C._FK_GAME = " + playerGame + "));");
+					     stmnt = connect.prepareStatement("UPDATE candidates C SET C.NAY = (?) WHERE (C._FK_PLAYER = " + pk + ") AND (C._FK_GAME = " + playerGame + ");");
 					     stmnt.setInt(1, 1);
 					     stmnt.executeUpdate();				  
 					     break;
@@ -453,7 +396,8 @@ public class GameDAOJDBC implements GameDAO{
 			try 
 			{
 				 stmnt.close();
-				 connect.close();	
+				 daoFactory.closeConnection(connect);
+				 //connect.close();	
 			} 
 			
 				catch (SQLException e) 
@@ -475,13 +419,8 @@ public class GameDAOJDBC implements GameDAO{
 		PreparedStatement statement = null;
 		PreparedStatement stmnt = null;
 		ResultSet resultSet = null;
-				
-		//Connect to jar file
-		//connection(); 
-		
-		try{
-			   //connect = dbConnection();	
-			 
+						
+		try{			 
 			   //connect to the database and jar file through the DAO Factory
 			   connect = daoFactory.getConnection();
 			
@@ -558,7 +497,8 @@ public class GameDAOJDBC implements GameDAO{
 				 }
 				 resultSet.close();
 				 statement.close();
-				 connect.close();	
+				 daoFactory.closeConnection(connect);
+				// connect.close();	
 			} 
 			
 				catch (SQLException e) 
@@ -577,15 +517,9 @@ public class GameDAOJDBC implements GameDAO{
 		Connection connect = null;
 		PreparedStatement statement1 = null;
 		PreparedStatement statement2 = null;	
-		
-		//Connect to jar file
-		//connection(); 
-		
+			
 		try
 		{			
-			//Connect to the DB
-			//connect = dbConnection();
-
 			//connect to the database and jar file through the DAO Factory
 			connect = daoFactory.getConnection();
 			
@@ -612,7 +546,8 @@ public class GameDAOJDBC implements GameDAO{
 			{
 				 statement1.close();
 				 statement2.close();
-				 connect.close();	
+				 daoFactory.closeConnection(connect);
+				// connect.close();	
 			} 
 			
 				catch (SQLException e) 
@@ -629,14 +564,9 @@ public class GameDAOJDBC implements GameDAO{
 		Connection connect = null;
 		PreparedStatement statement = null;
 		ResultSet resultSet = null;	
-
-		//Connect to jar file
-		//connection();
 		
 		try
-		{	
-			//connect = dbConnection();
-			
+		{				
 			//connect to the database and jar file through the DAO Factory
 			connect = daoFactory.getConnection();
 	        	        			
@@ -665,8 +595,9 @@ public class GameDAOJDBC implements GameDAO{
 			try 
 			{
 				 resultSet.close(); 
-				 statement.close();				 
-				 connect.close();	
+				 statement.close();	
+				 daoFactory.closeConnection(connect);
+				 //connect.close();	
 			} 
 			
 				catch (SQLException e) 
@@ -683,14 +614,9 @@ public class GameDAOJDBC implements GameDAO{
 		Connection connect = null;
 		PreparedStatement statement = null;
 		ResultSet resultSet = null;
-		
-		//Connect to jar file
-		//connection();
-			
+				
 		try
-		{
-			 //connect = dbConnection();
-			
+		{			
 			 //connect to the database and jar file through the DAO Factory
 			 connect = daoFactory.getConnection();
 			
@@ -735,7 +661,8 @@ public class GameDAOJDBC implements GameDAO{
 			try 
 			{
 				 resultSet.close();
-				 statement.close();			 
+				 statement.close();	
+				 //daoFactory.closeConnection(connect);//Uncommenting causes leak warnings, compiler just not smart enough to see the issues?
 				 connect.close();	
 			} 
 			
@@ -756,12 +683,9 @@ public class GameDAOJDBC implements GameDAO{
 		Connection connect = null;
 		PreparedStatement statement = null;
 		ResultSet resultSet = null;
-		//Connect to jar file
-		//connection();
+
 		try
-		{
-			//connect = dbConnection();//Connect to db	
-			
+		{			
 			//connect to the database and jar file through the DAO Factory
 			connect = daoFactory.getConnection();
 			
@@ -799,8 +723,9 @@ public class GameDAOJDBC implements GameDAO{
 			try 
 			{
 				 resultSet.close(); 
-				 statement.close();				 
-				 connect.close();	
+				 statement.close();	
+				 daoFactory.closeConnection(connect);
+				 //connect.close();	
 			} 
 			
 				catch (SQLException e) 
@@ -825,15 +750,10 @@ public class GameDAOJDBC implements GameDAO{
 		ResultSet resultSet2 = null;
 		ResultSet resultSet3 = null;
 		ResultSet resultSet4 = null;
-		ResultSet resultSet5 = null;
-						
-		//Connect to jar file
-		//connection();
+		ResultSet resultSet5 = null;						
 		
 		try
-		{
-			 //connect = dbConnection();
-			
+		{			
 			 //connect to the database and jar file through the DAO Factory
 			 connect = daoFactory.getConnection();
 			
@@ -938,8 +858,9 @@ public class GameDAOJDBC implements GameDAO{
 					 {
 					     resultSet5.close();
 					 }
-				 statement.close();				 
-				 connect.close();	
+				 statement.close();	
+				 daoFactory.closeConnection(connect);
+				 //connect.close();	
 			} 
 			
 				catch (SQLException e) 
@@ -957,13 +878,8 @@ public class GameDAOJDBC implements GameDAO{
 		Connection connect = null;
 		PreparedStatement statement = null;
 		ResultSet resultSet = null;
-		
-		//Connect to jar file
-		//connection();
-		
-		try{
-			//connect = dbConnection();
-			
+				
+		try{			
 			//connect to the database and jar file through the DAO Factory
 			connect = daoFactory.getConnection();
 	 	    
@@ -995,7 +911,8 @@ public class GameDAOJDBC implements GameDAO{
 			try 
 			{
 				 resultSet.close(); 
-				 statement.close();				 
+				 statement.close();	
+				 //daoFactory.closeConnection(connect);//Causes leak warnings on connect variable
 				 connect.close();	
 			} 
 			
@@ -1014,15 +931,9 @@ public class GameDAOJDBC implements GameDAO{
 		Connection connect = null;
 		PreparedStatement statement = null;
 		ResultSet resultSet = null;
-		
-		//Connect to jar file
-		//connection();
-		
-		try
-		{
-			 //Connect to DB
-			 //connect = dbConnection();	
 			
+		try
+		{			
 			 //connect to the database and jar file through the DAO Factory
 			 connect = daoFactory.getConnection();
 			
@@ -1054,7 +965,8 @@ public class GameDAOJDBC implements GameDAO{
 			{
 				 resultSet.close();
 				 statement.close();
-				 connect.close();	
+				 daoFactory.closeConnection(connect);
+				 //connect.close();	
 			} 
 			
 				catch (SQLException e) 
@@ -1075,14 +987,9 @@ public class GameDAOJDBC implements GameDAO{
 	    Connection connect = null;
 	    PreparedStatement statement = null;
 		ResultSet resultSet = null;
-		
-		//Connect to jar file
-		//connection();
-		
+	
 		try
-		{
-			 //connect = dbConnection();
-			
+		{			
 			 //connect to the database and jar file through the DAO Factory
 			 connect = daoFactory.getConnection();
 			
@@ -1117,7 +1024,8 @@ public class GameDAOJDBC implements GameDAO{
 			try 
 			{
 				 resultSet.close();				
-				 statement.close();				 
+				 statement.close();	
+				// daoFactory.closeConnection(connect);//Causes leak warnings on connect variable wtf
 				 connect.close();	
 			} 
 			
@@ -1141,13 +1049,8 @@ public class GameDAOJDBC implements GameDAO{
 		PreparedStatement statement = null;
 		ResultSet resultSet = null;
 		
-		//Connect to jar file
-		//connection();
-		
 		try
-		{
-			 //connect = dbConnection();
-			 					
+		{		 					
 			 //connect to the database and jar file through the DAO Factory
 			 connect = daoFactory.getConnection();
 			
@@ -1176,8 +1079,9 @@ public class GameDAOJDBC implements GameDAO{
 			try 
 			{
 				 resultSet.close();
-				 statement.close();				 
-				 connect.close();	
+				 statement.close();	
+				 daoFactory.closeConnection(connect);
+				 //connect.close();	
 			} 
 			
 				catch (SQLException e) 
@@ -1199,15 +1103,9 @@ public class GameDAOJDBC implements GameDAO{
 		Connection connect = null;
 		PreparedStatement statement = null;
 		ResultSet resultSet = null;
-		
-		//Connect to jar file
-		//connection();
-			
+				
 		try
-		{
-			 //Connect to DB
-			 //connect = dbConnection();
-			
+		{			
 			 //connect to the database and jar file through the DAO Factory
 			 connect = daoFactory.getConnection(); 
 			
@@ -1247,7 +1145,8 @@ public class GameDAOJDBC implements GameDAO{
 			{
 				 resultSet.close();
 				 statement.close();				 
-				 connect.close();	
+				 daoFactory.closeConnection(connect);
+				 //connect.close();	
 			} 
 			
 				catch (SQLException e) 
@@ -1268,14 +1167,8 @@ public class GameDAOJDBC implements GameDAO{
 		Connection connect = null;
 		PreparedStatement statement = null;
 		ResultSet resultSet = null;		
-		
-		//Connect to jar file
-		//connection();
-		
-		try{	
-			//Connect to DB
-			//connect = dbConnection();
 			
+		try{			
 			//connect to the database and jar file through the DAO Factory
 			connect = daoFactory.getConnection();
 			
@@ -1306,8 +1199,9 @@ public class GameDAOJDBC implements GameDAO{
 			try 
 			{
 				 resultSet.close();
-				 statement.close();			 
-				 connect.close();	
+				 statement.close();	
+				 daoFactory.closeConnection(connect);
+				 //connect.close();	
 			} 
 			
 				catch (SQLException e) 
@@ -1328,13 +1222,8 @@ public class GameDAOJDBC implements GameDAO{
 		Connection connect = null;
 		PreparedStatement statement = null;
 		ResultSet resultSet = null;
-		
-		//Connect to the database
-		//connection();				
-				
-		try{	
-			//connect = dbConnection();
-			
+					
+		try{				
 			//connect to the database and jar file through the DAO Factory
 			connect = daoFactory.getConnection();
 
@@ -1368,8 +1257,9 @@ public class GameDAOJDBC implements GameDAO{
 			try 
 			{
 				 resultSet.close();
-				 statement.close();				 
-				 connect.close();	
+				 statement.close();		
+				 daoFactory.closeConnection(connect);
+				 //connect.close();	
 			} 
 			
 				catch (SQLException e) 
@@ -1390,15 +1280,9 @@ public class GameDAOJDBC implements GameDAO{
 		String[] electionResults = new String[10];
 		Connection connect = null;
 		PreparedStatement statement = null;
-		ResultSet resultSet = null;	
-		
-		//Connect to the jar file
-		//connection();		
+		ResultSet resultSet = null;				
 						
-		try{				
-			//Connect to the database
-			//connect = dbConnection();
-			
+		try{							
 			//connect to the database and jar file through the DAO Factory
 			connect = daoFactory.getConnection();
 			
@@ -1429,8 +1313,9 @@ public class GameDAOJDBC implements GameDAO{
 			try 
 			{
 				 resultSet.close();
-				 statement.close();				 
-				 connect.close();	
+				 statement.close();	
+				 daoFactory.closeConnection(connect);
+				 //connect.close();	
 			} 
 			
 				catch (SQLException e) 
@@ -1448,15 +1333,9 @@ public class GameDAOJDBC implements GameDAO{
 		String winner = null;
 		Connection connect = null;
 		PreparedStatement statement = null;
-		ResultSet resultSet = null;	
-		
-		//Connect to the jar file
-		//connection();		
+		ResultSet resultSet = null;			
 						
 		try{				
-			//Connect to the database
-			//connect = dbConnection();
-			
 			//connect to the database and jar file through the DAO Factory
 			connect = daoFactory.getConnection();
 			
@@ -1480,8 +1359,9 @@ public class GameDAOJDBC implements GameDAO{
 			try 
 			{
 				 resultSet.close();
-				 statement.close();				 
-				 connect.close();	
+				 statement.close();		
+				 daoFactory.closeConnection(connect);
+				 //connect.close();	
 			} 
 			
 				catch (SQLException e) 
@@ -1506,15 +1386,9 @@ public class GameDAOJDBC implements GameDAO{
 		PreparedStatement statement3 = null;
 		PreparedStatement statement4 = null;
 		ResultSet resultSet1 = null;
-		ResultSet resultSet2 = null;
+		ResultSet resultSet2 = null;	
 		
-		//Connect to the jar file
-		//connection();
-		
-		try{				
-			//Connect to the database
-			//connect = dbConnection();
-			
+		try{							
 			//connect to the database and jar file through the DAO Factory
 			connect = daoFactory.getConnection();
 						
@@ -1557,8 +1431,9 @@ public class GameDAOJDBC implements GameDAO{
 				 statement1.close();
 				 statement2.close();
 				 statement3.close();
-				 statement4.close();				
-				 connect.close();	
+				 statement4.close();	
+				 daoFactory.closeConnection(connect);
+				 //connect.close();	
 			} 
 			
 				catch (SQLException e) 

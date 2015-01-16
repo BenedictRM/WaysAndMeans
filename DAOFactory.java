@@ -126,14 +126,32 @@ public abstract class DAOFactory {
     /**
      * Returns the Game DAO associated with the current DAOFactory.
      * First calls the GameDAO interface
-     * Returns a nre copy of the GameDAO
+     * Returns an nre copy of the GameDAO
      * @return The Game DAO associated with the current DAOFactory.
      */
-    public GameDAO getUserDAO() {
+    public GameDAO getGameDAO() {
         //Return an instance of the Game DAO (should be unique)
     	return new GameDAOJDBC(this);
     }
-
+    
+    /**
+     * Closes connection sent to it
+     * @param connection
+     * @throws SQLException
+     */
+    public void closeConnection(Connection connection) throws SQLException {
+        try
+        {
+        	//Make sure connection is a valid, open connection before closing
+            if(connection!=null && (!(connection.isClosed())))
+            {
+                System.out.println ("Closing connection: " + connection + "\n");
+                connection.close();
+                System.out.println ("Closed!\n");
+            }
+        }
+        catch(SQLException e) { throw e; }
+    }    
     // You can add more DAO implementation getters here.
 
 }

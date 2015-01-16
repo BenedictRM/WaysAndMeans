@@ -99,7 +99,7 @@ public class Main {
 		// Obtain DAOFactory.
 	    DAOFactory javabase = DAOFactory.getInstance("game.jdbc");
 	    // Obtain GameDAO. Use this to call Game methods
-	    final GameDAO gameDAO = javabase.getUserDAO();
+	    final GameDAO gameDAO = javabase.getGameDAO();
 		System.out.println("DAOFactory successfully obtained: " + javabase);
 		System.out.println("UserDAO successfully obtained: " + gameDAO);
 		
@@ -555,7 +555,7 @@ public class Main {
 		// Obtain DAOFactory.
 	    DAOFactory javabase = DAOFactory.getInstance("game.jdbc");
 	    // Obtain GameDAO.
-	    final GameDAO gameDAO = javabase.getUserDAO();
+	    final GameDAO gameDAO = javabase.getGameDAO();
 		System.out.println("DAOFactory successfully obtained: " + javabase);
 		System.out.println("GameDAO successfully obtained: " + gameDAO);
 
@@ -650,7 +650,7 @@ public class Main {
 		// Obtain DAOFactory.
 	    DAOFactory javabase = DAOFactory.getInstance("game.jdbc");
 	    // Obtain GameDAO.
-	    final GameDAO gameDAO = javabase.getUserDAO();
+	    final GameDAO gameDAO = javabase.getGameDAO();
 		System.out.println("DAOFactory successfully obtained: " + javabase);
 		System.out.println("GameDAO successfully obtained: " + gameDAO);
 
@@ -871,7 +871,7 @@ public class Main {
 		// Obtain DAOFactory.
 	    DAOFactory javabase = DAOFactory.getInstance("game.jdbc");
 	    // Obtain GameDAO.
-	    final GameDAO gameDAO = javabase.getUserDAO();
+	    final GameDAO gameDAO = javabase.getGameDAO();
 		System.out.println("DAOFactory successfully obtained: " + javabase);
 		System.out.println("GameDAO successfully obtained: " + gameDAO);
 
@@ -955,7 +955,7 @@ public class Main {
 		// Obtain DAOFactory.
 	    DAOFactory javabase = DAOFactory.getInstance("game.jdbc");
 	    // Obtain GameDAO.
-	    final GameDAO gameDAO = javabase.getUserDAO();
+	    final GameDAO gameDAO = javabase.getGameDAO();
 		System.out.println("DAOFactory successfully obtained: " + javabase);
 		System.out.println("GameDAO successfully obtained: " + gameDAO);
 
@@ -1115,7 +1115,7 @@ public class Main {
 		// Obtain DAOFactory.
 	    DAOFactory javabase = DAOFactory.getInstance("game.jdbc");
 	    // Obtain GameDAO.
-	    final GameDAO gameDAO = javabase.getUserDAO();
+	    final GameDAO gameDAO = javabase.getGameDAO();
 		System.out.println("DAOFactory successfully obtained: " + javabase);
 		System.out.println("GameDAO successfully obtained: " + gameDAO);
 
@@ -1233,7 +1233,7 @@ public class Main {
 		// Obtain DAOFactory.
 	    DAOFactory javabase = DAOFactory.getInstance("game.jdbc");
 	    // Obtain GameDAO.
-	    final GameDAO gameDAO = javabase.getUserDAO();
+	    final GameDAO gameDAO = javabase.getGameDAO();
 		System.out.println("DAOFactory successfully obtained: " + javabase);
 		System.out.println("GameDAO successfully obtained: " + gameDAO);
 		
@@ -1314,7 +1314,7 @@ public class Main {
 		// Obtain DAOFactory.
 	    DAOFactory javabase = DAOFactory.getInstance("game.jdbc");
 	    // Obtain GameDAO. Use this to call instances of the GameDAO NOT Game
-	    GameDAO gameDAO = javabase.getUserDAO();
+	    GameDAO gameDAO = javabase.getGameDAO();
 		System.out.println("DAOFactory successfully obtained: " + javabase);
 		System.out.println("GameDAO successfully obtained: " + gameDAO);		
 		
