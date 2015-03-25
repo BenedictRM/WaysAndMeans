@@ -29,7 +29,7 @@ public interface GameDAO {
 	 * @param pk
 	 */
 	public void deleteUser (Integer pk) throws DAOException;
-
+	
 	/**
 	 * This function creates a new game in the database table 'game' that users can now join and play
 	 */

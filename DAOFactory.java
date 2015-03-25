@@ -94,7 +94,7 @@ public abstract class DAOFactory {
             instance = new DriverManagerDAOFactory(url, username, password);
         }
 
-        // Else assume URL as DataSource URL and lookup it in the JNDI.
+        // Else assume URL as DataSource URL and look it up in the JNDI.
         else {
             DataSource dataSource;
             try {

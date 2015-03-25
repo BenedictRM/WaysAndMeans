@@ -98,7 +98,7 @@ public class Main {
 		// Vars ---------------------------------------------------------------------------------------
 		// Obtain DAOFactory.
 	    DAOFactory javabase = DAOFactory.getInstance("game.jdbc");
-	    // Obtain GameDAO. Use this to call Game methods
+	    // Obtain GameDAO object. Use this to call Game methods
 	    final GameDAO gameDAO = javabase.getGameDAO();
 		System.out.println("DAOFactory successfully obtained: " + javabase);
 		System.out.println("UserDAO successfully obtained: " + gameDAO);
