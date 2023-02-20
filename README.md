@@ -1,7 +1,7 @@
 WaysAndMeans
 ============
 
-Ways And Means Development Repository
+Ways And Means Development
 
 *Features MySQL db dump
 
